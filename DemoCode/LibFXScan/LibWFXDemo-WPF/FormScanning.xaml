@@ -1,0 +1,9 @@
+﻿<Window x:Class="LibWFXDemo_CSharp.FormScanning"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibWFXDemo_CSharp"
+        mc:Ignorable="d" Height="112.374" Width="300" ShowInTaskbar="False" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="CenterScreen">
+    <Label x:Name="label" Content="Scanning...Please wait" HorizontalAlignment="Left" Margin="68,44,0,0" VerticalAlignment="Top" FontSize="16"/>
+</Window>

@@ -1,0 +1,18 @@
+﻿<Window x:Name="FormWarmup1" x:Class="LibWFXDemo_CSharp.FormWarmup"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibWFXDemo_WPF"
+        mc:Ignorable="d"
+        Title="FormWarmup" Height="142" Width="300">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="153*"/>
+            <ColumnDefinition Width="139*"/>
+        </Grid.ColumnDefinitions>
+        <Label x:Name="label" Content="Warm up...Please wait" HorizontalAlignment="Left" Margin="76,26,0,0" VerticalAlignment="Top" Grid.ColumnSpan="2"/>
+        <ProgressBar x:Name="PROGRESS_WARMUP" HorizontalAlignment="Left" Height="25" Margin="16,64,0,0" VerticalAlignment="Top" Width="260" Grid.ColumnSpan="2"/>
+
+    </Grid>
+</Window>

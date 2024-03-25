@@ -1,0 +1,55 @@
+﻿<Window x:Class="LibWFXDemo_CSharp.FormDemo_BlockMode"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibWFXDemo_CSharp"
+        mc:Ignorable="d"
+        Title="Demo - C#" Height="471" Width="885" ResizeMode="NoResize" Foreground="Black" Loaded="FormMain_Load" Closing="FormDemo_FormClosing">
+    <Grid HorizontalAlignment="Left" Width="875" RenderTransformOrigin="0.978,0.506">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="460*"/>
+            <ColumnDefinition Width="91*"/>
+            <ColumnDefinition Width="305*"/>
+            <ColumnDefinition Width="13*"/>
+            <ColumnDefinition Width="6*"/>
+
+        </Grid.ColumnDefinitions>
+        <TextBox x:Name="TXT_LOG" HorizontalAlignment="Left" Height="163" Margin="34,10,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="413" Background="#FFF7F5F5" BorderBrush="#FFA8A3A3"/>
+        <Label x:Name="label" Content="Device" HorizontalAlignment="Left" Margin="31,181,0,0" VerticalAlignment="Top" Height="25" Width="48"/>
+        <ComboBox x:Name="COMBO_DEVICE" HorizontalAlignment="Left" Margin="88,183,0,0" VerticalAlignment="Top" Width="259" SelectionChanged="COMBO_DEVICE_SelectionChanged" Height="21"/>
+        <Button x:Name="BTN_REFRESH" Content="Refresh" HorizontalAlignment="Left" Margin="373,185,0,0" VerticalAlignment="Top" Width="74" Click="BTN_REFRESH_Click" Height="19"/>
+        <Label x:Name="label1" Content="Command" HorizontalAlignment="Left" Margin="31,211,0,0" VerticalAlignment="Top" Height="25" Width="69"/>
+        <Button x:Name="BTN_EDIT" Content="Edit" HorizontalAlignment="Left" Margin="107,214,0,0" VerticalAlignment="Top" Width="29" Click="BTN_EDIT_Click" Height="19"/>
+        <ComboBox x:Name="COMBO_COMMAND" HorizontalAlignment="Left" Margin="155,215,0,0" VerticalAlignment="Top" Width="292" AllowDrop="True" IsEditable="True" Height="21" >
+            <ComboBox.Resources>
+                <Style TargetType="Popup">
+                </Style>
+            </ComboBox.Resources>
+        </ComboBox>
+        <Grid Margin="0,-2,0,2">
+            <TextBlock Text="{Binding ElementName=PROGRESS_BAR, Path=Value, StringFormat={}{0:0}%}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="230,246,194,182" Width="36" />
+        </Grid>
+        <GroupBox x:Name="groupBox" Header="Normal" HorizontalAlignment="Left" Margin="31,266,0,0" VerticalAlignment="Top" Height="136" Width="413"/>
+        <Button x:Name="BTN_BLOCKSCAN" Content="Scan" HorizontalAlignment="Left" Margin="48,292,0,0" VerticalAlignment="Top" Width="184" Height="19" Background="#FF7AD3FD" Click="BTN_SCAN_Click"/>
+        <Button x:Name="BTN_PAPER_READY" Content="PaperReady" HorizontalAlignment="Left" Margin="243,292,0,0" VerticalAlignment="Top" Width="86" Click="BTN_PAPER_READY_Click" Height="19" />
+        <Button x:Name="BTN_ECO" Content="ECO" HorizontalAlignment="Left" Margin="146,326,0,0" VerticalAlignment="Top" Width="86" Click="BTN_ECO_Click" Height="19" />
+        <Button x:Name="BTN_PAPER_STATUS" Content="PaperStatus" HorizontalAlignment="Left" Margin="341,292,0,0" VerticalAlignment="Top" Width="86" Click="BTN_PAPER_STATUS_Click" Height="19" />
+        <Button x:Name="BTN_CALIBRATE" Content="Calibrate" HorizontalAlignment="Left" Margin="48,326,0,0" VerticalAlignment="Top" Width="86" Click="BTN_CALIBRATE_Click" Height="19" />
+        <Button x:Name="BTN_MERGETOPDF" Content="MergePDF" HorizontalAlignment="Left" Margin="48,361,0,0" VerticalAlignment="Top" Width="86" Click="BTN_MERGETOPDF_Click" Height="19" />
+        <Button x:Name="BTN_RECYCLESAVEFOLDER" Content="RecycleSaveFolder" HorizontalAlignment="Left" Margin="243,326,0,0" VerticalAlignment="Top" Width="184" Height="19" Click="BTN_RECYCLESAVEFOLDER_Click" />
+        <Image x:Name="PIC_1" Margin="1,11,12,268" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Center" VerticalAlignment="Center" Width="396"  Height="163" Grid.ColumnSpan="3" Grid.Column="1"/>
+        <GroupBox x:Name="groupBox_Copy" Header="VTM300" HorizontalAlignment="Left" Margin="3,353,0,0" VerticalAlignment="Top" Height="72" Width="180" Grid.Column="1" Grid.ColumnSpan="2">
+            <CheckBox x:Name="CHK_EJECT_DIRECT" Content="Back" HorizontalAlignment="Left" Margin="112,17,0,0" VerticalAlignment="Top"/>
+        </GroupBox>
+        <Button x:Name="BTN_EJECT_PAPER" Content="EjectPaper" HorizontalAlignment="Left" Margin="20,383,0,0" VerticalAlignment="Top" Width="86" Grid.Column="1" Click="BTN_EJECT_PAPER_Click" Height="19" Grid.ColumnSpan="2" />
+        <Button x:Name="BTN_EXIT" Content="X" Grid.Column="2" HorizontalAlignment="Left" Margin="303,-74,0,497" VerticalAlignment="Bottom" Width="18" Background="#FFDE2525" BorderBrush="#FF9B9292" Foreground="#FFF3EDED" Height="19" Grid.ColumnSpan="3" />
+
+        <Image x:Name="PIC_2" Margin="1,184,12,95" RenderTransformOrigin="0.846,0.507" HorizontalAlignment="Center" VerticalAlignment="Center" Width="396" Height="163" Grid.ColumnSpan="3" Grid.Column="1" />
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="164" Margin="0,10,0,0" VerticalAlignment="Top" Width="401" Grid.ColumnSpan="3" Grid.Column="1"/>
+        <Border BorderBrush="Black" BorderThickness="1" HorizontalAlignment="Left" Height="164" Margin="0,184,0,0" VerticalAlignment="Top" Width="401" Grid.ColumnSpan="3" Grid.Column="1"/>
+
+
+
+    </Grid>
+</Window>

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebSDK2.0 Demo</title>
+    <script src="jquery.3.6.4.js"></script>
+    <script src="scan.js"></script>
+    <script src="main.js"></script>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div id="viewport">
+      <div class="wrapper">
+        <button disabled="disabled" id="scan">scan</button>
+        <div class="imgWrapper">
+          <img id="img-zone" />
+        </div>
+        <span id="filename"></span>
+      </div>
+      <div id="status" class="connect-color">Device is connecting...</div>
+    </div>
+    <div class="loading-mask hide">
+      <div class="loader"></div>
+    </div>
+  </body>
+</html>
