@@ -27,7 +27,7 @@ For advanced services or tailored solutions, paid consultations are available, p
 - Documentation: Plustek provides comprehensive documentation for its SDKs, including:
 	- [WebFXScan JavaScript Library Documentation]
 	- [LibFXScan Documentation]
-	- [License Agreement]
+	- [License Agreement] and [Notices]
  
 - This documentation will equip developers with the necessary information to effectively utilize the Plustek SDK in their projects.
 
@@ -55,7 +55,7 @@ Plustek SDK 提供兩種版本：
 - 文件：Plustek 為其 SDK 提供全面的文檔，包括：
     - [WebFXScan Javascript 說明文件]
     - [LibFXScan 說明文件]
-    - [授權]
+    - [授權]和[聲明]
  
 - 該文件將為開發人員提供必要的信息，以便在他們的專案中有效地利用 Plustek SDK。
 
@@ -71,6 +71,9 @@ Plustek SDK 提供兩種版本：
 
     [License Agreement]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/LICENSE.txt
     [授權]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/LICENSE.txt
+
+    [Notices]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/NOTICE.txt
+    [聲明]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/NOTICE.txt
 
     [Plustek 官方網站]:https://plustek.com/tw/solutions/sdk.php
     [Plustek]:https://plustek.com/us/solutions/sdk.php
