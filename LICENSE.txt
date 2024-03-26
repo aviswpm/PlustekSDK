@@ -199,7 +199,35 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
-   
+
+	Notice
+
+	1. 2023 (c) PlustekSDK PROJECT, developed by Plustek, ALL RIGHTS RESERVED.
+
+	2. The rights to install, use, copy, modify and distribute authoritative materials, 
+		including modified software and documentation, are fully granted by this Agreement, 
+		regardless of whether a fee is charged.
+
+	3. When redistributing software, documentation and other copyrighted materials in original code 
+		or binary form, the conditions and disclaimers specified in the agreement shall be followed, 
+		including the necessary reservations for copyright, patent, trademark statements and agreement requirements. 
+		This Agreement only authorizes the use of Plustek's patents and copyrights within the scope of the agreement, 
+		and does not authorize the use of Plustek's trademarks.
+
+	4. The provider is not responsible for any direct, indirect or incidental damages arising from 
+		the software code for any reason. This liability includes but is not limited to any loss of 
+		property or profit, physical damage or consequential damages.
+
+	5. All disputes and interpretations regarding this software license agreement will be handled in 
+		accordance with the relevant laws of the Republic of China (Taiwan) and international conventions, 
+		except for parts that conflict with legal provisions. If any item in this Agreement is invalid 
+		or unenforceable for any reason, it will not affect the validity and legal enforceability of 
+		the other provisions of this Agreement.
+
+	6. For other matters not expressly stated in this software license agreement, 
+		the company reserves all legal rights. If you still have other questions about 
+		this software license agreement, or would like to know other information about Plustek, 
+		please contact Plustek.   
    
 ======================================================================================
 						Apache 授權 / Apache License
@@ -313,3 +341,25 @@
 	除非適用法律要求或以書面同意，否則根據「授權」所配送的軟體以「依現狀」提供，
 	不提供任何類型的保證或條件 (明示或默示)。請參閱「授權」，
 	以取得特定語言控管權限及「授權」下的限制。
+
+	注意事項
+
+	1. 2023 (c) PlustekSDK PROJECT，由Plustek 開發，保留所有權利。
+
+	2. 安裝、使用、複製、修改和分發包括修改後的軟體和文檔等著作材料的權利，
+		均由該協議完全授予，無論是否收取費用。
+
+	3. 以原始程式碼或二進位形式再分發軟體和文檔等著作材料時，應按照該協議中所限制的條件和免責條款進行操作，
+		其中包括對著作權、專利、商標聲明和協議要求的必要保留。
+		本協議僅授權使用協議範圍內Plustek所有之專利及著作權，並未授權許可使用Plustek商標。
+
+	4. 提供者無論基於任何理由都不對該軟體代碼產生的任何直接、間接或偶發性損害負責，
+		這種責任包括但不限於任何財產或利潤的損失、身體損害或連帶損害等。
+
+	5. 一切關於本軟體許可協定的爭議和解釋，悉依中華民國（台灣）相關法律及國際公約處理，
+		與法律規定相衝突的部分除外。如果本協議有任何專案不具法律效力，或因某種原因無法強制執行時，
+		將不會影響本協議其他條款的有效性，以及在法律上的執行效力。
+
+	6. 其他未於本軟體許可協定明述的事項，本公司均保留所有法律權利。
+		如果您仍有關於本軟體許可協定的其他問題，或者想瞭解精益科技公司其他資訊，
+		請聯繫精益科技公司。 
