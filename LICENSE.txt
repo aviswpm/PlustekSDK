@@ -200,7 +200,7 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 
-	Notice
+Notice
 
 	1. 2023 (c) PlustekSDK PROJECT, developed by Plustek, ALL RIGHTS RESERVED.
 
