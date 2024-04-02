@@ -17,6 +17,7 @@ For advanced services or tailored solutions, paid consultations are available, p
  
 	- Before installing the Plustek SDK, ensure you have the compatible scanner driver installed and the scanner is connected to your computer.
 	- The provided demo code for LibFXScan requires Microsoft Visual C++ 2015 Redistributable for compilation.
+    - .NET Framework version 4.0 or above is required.
  
 - Installation Steps:
  
@@ -47,6 +48,7 @@ Plustek SDK 提供兩種版本：
 - 重要的提示：
     - 在安裝 Plustek SDK 之前，請確保您已安裝相容的掃描器驅動程式並且掃描器已連接到您的電腦。
     - 提供的 LibFXScan 示範程式碼需要 Microsoft Visual C++ 2015 Redistributable 來編譯。
+    - 需使用 .NET Framework 版本 4.0 或以上
 - 安裝步驟
     1. 複製示範程式碼：從 GitHub 取得您選擇的 SDK 版本的示範程式碼。
     2. 安裝SDK：根據您的作業系統（32位元或64位元）下載並執行[安裝程式]。
