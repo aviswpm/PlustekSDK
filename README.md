@@ -65,8 +65,8 @@ Plustek SDK 提供兩種版本：
     [LibFXScan 說明文件]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
     [LibFXScan Documentation]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
 
-    [安裝程式]:https://downloads.plustek.com/downloads/english/driver/PlustekSDK_LDSetup_24125.exe
-    [installer]:https://downloads.plustek.com/downloads/english/driver/PlustekSDK_LDSetup_24125.exe
+    [安裝程式]:https://downloads.plustek.com/downloads/PlustekSDK/PlustekSDK_LDSetup_24125.exe
+    [installer]:https://downloads.plustek.com/downloads/PlustekSDK/PlustekSDK_LDSetup_24125.exe
 
     [WebFXScan Javascript 說明文件]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
     [WebFXScan JavaScript Library Documentation]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
