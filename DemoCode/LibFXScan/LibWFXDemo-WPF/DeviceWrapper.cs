@@ -46,10 +46,11 @@ public enum ENUM_LIBWFX_ERRCODE
     LIBWFX_ERRCODE_FILE_NO_EXIST,               /**< When the RemoveFile is executed, the file does not exist */
     LIBWFX_ERRCODE_PATH_TOO_LONG,               /**< Execution file address is too long */
     LIBWFX_ERRCODE_COMMAND_KEY_MISMATCH,        /**< There is a unsatisfied type in the command */
-    LIBWFX_ERRCODE_SCANNING,                    /**< The scanning process is not over yet*/
+    LIBWFX_ERRCODE_SCANNING,                    /**< The scanning process is not over yet */
     LIBWFX_ERRCODE_FILE_OCCUPIED,               /**< When the RecycleSaveFolder is executed, the file or folder is occupied */
     LIBWFX_ERRCODE_SAVEPATH_ERROR,              /**< When the RecycleSaveFolder is executed, the save path format error */
-    LIBWFX_ERRCODE_TIMEOUT,                     /**< Timeout error*/
+    LIBWFX_ERRCODE_TIMEOUT,                     /**< Timeout error */
+    LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
 }
 
 public enum ENUM_LIBWFX_EVENT_CODE

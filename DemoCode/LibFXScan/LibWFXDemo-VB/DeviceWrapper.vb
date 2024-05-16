@@ -70,6 +70,7 @@ Public Class DeviceWrapper
         LIBWFX_ERRCODE_FILE_OCCUPIED = 1011             REM *< When the RecycleSaveFolder Is executed, the file Or folder Is occupied
         LIBWFX_ERRCODE_SAVEPATH_ERROR = 1012            REM *< When the RecycleSaveFolder Is executed, the save path format Error
         LIBWFX_ERRCODE_TIMEOUT = 1013                   REM *< Timeout Error
+        LIBWFX_ERRCODE_SERVER_OCCUPIED = 1014           REM *< Server has been occupied by other connections
     End Enum
 
     Public Enum ENUM_LIBWFX_EVENT_CODE

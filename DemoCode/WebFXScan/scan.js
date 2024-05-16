@@ -471,95 +471,30 @@ class WebFxScanScanner {
 
 /* Utility */
 class WebFxScanUtility {
-  static errorCode = {
-    apiNotExist: "api not exist",
-    connectFail: "connect fail",
-    apiIsBusy: "api is busy",
-    connectExist: "connect is exist",
-    connectAbort: "connect abort",
-    connectClose: "connect close",
-    connectError: "connect error",
-    closeFail: "close fail",
-    timeout: "timeout",
-    unknown: "unexpect error",
-    0: "LIBWFX_ERRCODE_SUCCESS",
-    1: "LIBWFX_ERRCODE_FAIL",
-    2: "LIBWFX_ERRCODE_NO_INIT",
-    3: "LIBWFX_ERRCODE_NOT_YET_OPEN_DEVICE",
-    4: "LIBWFX_ERRCODE_DEVICE_ALREADY_OPEN",
-    5: "LIBWFX_ERRCODE_INVALID_SOURCE",
-    6: "LIBWFX_ERRCODE_NO_ENABLE_THRESHOLD",
-    7: "LIBWFX_ERRCODE_NO_SUPPORT_THRESHOLD",
-    8: "LIBWFX_ERRCODE_NOT_YET_SET_SCAN_PROPERTY",
-    9: "LIBWFX_ERRCODE_NO_SET_RECOGNIZE_TOOL",
-    10: "LIBWFX_ERRCODE_OCR_NOT_SUPPORT_BOTTOMUP",
-    11: "LIBWFX_ERRCODE_READ_IMAGE_FAILED",
-    12: "LIBWFX_ERRCODE_ONLY_SUPPORT_COLOR_MODE",
-    13: "LIBWFX_ERRCODE_ICM_PROFILE_NOT_EXIST",
-    14: "LIBWFX_ERRCODE_NO_SUPPORT_EJECT",
-    15: "LIBWFX_ERRCODE_NO_SUPPORT_JPEGXFER",
-    16: "LIBWFX_ERRCODE_PAPER_NOT_READY",
-    17: "LIBWFX_ERRCODE_INVALID_SERIALNUM",
-    18: "LIBWFX_ERRCODE_DISCONNECT",
-    19: "LIBWFX_ERRCODE_FORMAT_NOT_SUPPORT",
-    20: "LIBWFX_ERRCODE_NO_CALIBRATION_DATA",
-    21: "LIBWFX_ERRCODE_OCR_TOOL_NOT_SUPPORT",
-    22: "LIBWFX_ERRCODE_RECOGNIZE_TYPE_NOT_SUPPORT",
-    23: "LIBWFX_ERRCODE_INVALID_CERTIFICATE",
-    24: "LIBWFX_ERRCODE_AP_ALREADY_EXISIT",
-    25: "LIBWFX_ERRCODE_OPENs_REGISTRY_KEY_FAILED",
-    26: "LIBWFX_ERRCODE_LOAD_MRTD_DLL_FAIL",
-    27: "LIBWFX_ERRCODE_COVER_OPENED",
-    28: "LIBWFX_ERRCODE_CERTIFICATE_EXPIRED",
-    29: "LIBWFX_ERRCODE_ALREADY_INIT",
-    30: "LIBWFX_ERRCODE_NO_SUPPORT_DUPLEX",
-    1001: "LIBWFX_ERRCODE_NO_AVI_OCR",
-    1002: "LIBWFX_ERRCODE_NO_DOC_OCR",
-    1003: "LIBWFX_ERRCODE_NO_OCR",
-    1004: "LIBWFX_ERRCODE_NO_DEVICES",
-    1005: "LIBWFX_ERRCODE_NO_DEVICE_NAME",
-    1006: "LIBWFX_ERRCODE_NO_SOURCE",
-    1007: "LIBWFX_ERRCODE_FILE_NOT_EXIST",
-    1008: "LIBWFX_ERRCODE_PATH_TOO_LONG",
-    1009: "LIBWFX_ERRCODE_COMMAND_KEY_MISMATCH",
-    1010: "LIBWFX_ERRCODE_SCANNING",
-    1011: "LIBWFX_ERRCODE_FILE_OCCUPIED",
-    1012: "LIBWFX_ERRCODE_SAVEPATH_ERROR",
-    1013: "LIBWFX_ERRCODE_TIMEOUT",
+  static libErrorCode = {
+    9001: "API is not exist.",
+    9002: "Connect fail.",
+    9003: "API is busy, the same API cannot be executed synchronously multiple times.",
+    9004: "Connection is already exist.",
+    9005: "Websocket connect abort by close()",
+    9006: "Websocket closed.",
+    9007: "Connection error occurred, message depend on event.message.",
+    9008: "Websocket socket.close() failed by close().",
+    9009: "Connection timed out, message depend on API name.",
+    9010: "Parameter error, message depend on kind of parameter",
+    9999: "Unexpected error.",
   };
-  static eventCode = {
-    0: "LIBWFX_EVENT_PAPER_DETECTED",
-    1: "LIBWFX_EVENT_NO_PAPER",
-    2: "LIBWFX_EVENT_PAPER_JAM",
-    3: "LIBWFX_EVENT_MULTIFEED",
-    4: "LIBWFX_EVENT_NO_CALIBRATION_DATA",
-    5: "LIBWFX_EVENT_WARMUP_COUNTDOWN",
-    6: "LIBWFX_EVENT_SCAN_PROGRESS",
-    7: "LIBWFX_EVENT_BUTTON_DETECTED",
-    8: "LIBWFX_EVENT_SCANNING",
-    9: "LIBWFX_EVENT_PAPER_FEEDING_ERROR",
-    10: "LIBWFX_EVENT_COVER_OPEN",
-    11: "LIBWFX_EVENT_LEFT_SENSOR_DETECTED",
-    12: "LIBWFX_EVENT_RIGHT_SENSOR_DETECTED",
-    13: "LIBWFX_EVENT_ALL_SENSOR_DETECTED",
-    14: "LIBWFX_EVENT_UVSECURITY_DETECTED",
-    15: "LIBWFX_EVENT_PLUG_UNPLUG",
-    16: "LIBWFX_EVENT_OVER_TIME_SCAN",
-    17: "LIBWFX_EVENT_CANCEL_SCAN",
-    18: "LIBWFX_EVENT_CAMERA_RGB_DISLOCATION",
-    19: "LIBWFX_EVENT_CAMERA_TIMEOUT",
-  };
-  static unknownErrorTypeMsg = "undefined error";
 
-  // API 拋出錯誤
+  // API project reject as throw error
   static throwError(props) {
-    const { errCode, apiName } = props;
-    if (errCode in this.errorCode) {
-      throw `${apiName}: ${this.errorCode[errCode]}`;
-    } else {
-      throw `${apiName}: ${this.unknownErrorTypeMsg}`;
-    }
+    const { errCode, apiName, message } = props;
+    throw {
+      result: false,
+      message: message,
+      error: errCode,
+    };
   }
+
   // API failure return format
   static failureResponse(props) {
     const self = this;
@@ -568,12 +503,10 @@ class WebFxScanUtility {
     return {
       result: false,
       message: message,
-      error:
-        errCode in self.errorCode
-          ? self.errorCode[errCode]
-          : self.unknownErrorTypeMsg,
+      error: errCode,
     };
   }
+
   // API successful return format
   static successResponse(props) {
     const { message = "", data = {}, apiItem = null } = props;
@@ -649,7 +582,7 @@ class WebFxScanServer {
     this.state.mode = mode;
   }
 
-  version = "1.1.1";
+  version = "1.1.1.24153";
   state = {
     socket: null,
     ip: "",
@@ -815,6 +748,7 @@ class WebFxScanServer {
     autoScanCallback: null, // cache callback with autoScan()
     scanCallback: null, // cache callback with scan()
     scanIndex: 0, // progress
+    isAutoScan: false,
   };
   cache = {};
   isDisconnecting = false;
@@ -823,10 +757,19 @@ class WebFxScanServer {
   notify(apiName, data = null, timeout = null) {
     const self = this;
     if (!(apiName in self.apiList)) {
-      WebFxScanUtility.throwError({ errCode: "apiNotExist", apiName });
+      WebFxScanUtility.throwError({
+        errCode: 9001,
+        message: "API is not exist.",
+        apiName,
+      });
     }
     if (self.apiList[apiName].isActive) {
-      WebFxScanUtility.throwError({ errCode: "apiIsBusy", apiName });
+      WebFxScanUtility.throwError({
+        errCode: 9003,
+        message:
+          "API is busy, the same API cannot be executed synchronously multiple times.",
+        apiName,
+      });
     }
 
     return new Promise((resolve, reject) => {
@@ -888,7 +831,7 @@ class WebFxScanServer {
       self.promiseReject(
         self.apiList[apiName],
         WebFxScanUtility.failureResponse({
-          errCode: "timeout",
+          errCode: 9009,
           message: `error: ${apiName} timeout > ${timeout / 1000}s`,
         })
       );
@@ -947,7 +890,7 @@ class WebFxScanServer {
       errorCallback,
       closeCallback,
     } = props;
-    self.initConnectState();
+
     return new Promise((resolve, reject) => {
       // Temporary promise, used to interrupt when a connection is close() during establishment.
       self.apiList.connect.promise = { resolve, reject };
@@ -958,11 +901,14 @@ class WebFxScanServer {
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
-            errCode: "connectExist",
-            message: "",
+            errCode: 9004,
+            message: "Connection is already exist.",
           })
         );
         return;
+      } else {
+        self.initConnectState();
+        self.apiList.connect.isActive = true;
       }
 
       self.state.ip = ip;
@@ -977,8 +923,8 @@ class WebFxScanServer {
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
-            errCode: "connectFail",
-            message: "",
+            errCode: 9002,
+            message: "Connect fail.",
           })
         );
         return;
@@ -1013,8 +959,8 @@ class WebFxScanServer {
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
-            errCode: "connectClose",
-            message: "websocket on close",
+            errCode: 9006,
+            message: "Websocket closed.",
           })
         );
       };
@@ -1024,7 +970,7 @@ class WebFxScanServer {
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
-            errCode: "connectError",
+            errCode: 9007,
             message: event.message,
           })
         );
@@ -1061,7 +1007,7 @@ class WebFxScanServer {
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
-            errCode: "connectAbort",
+            errCode: 9005,
             message: "websocket connect abort by close()",
           })
         );
@@ -1083,8 +1029,8 @@ class WebFxScanServer {
         }
       } catch (e) {
         WebFxScanUtility.failureResponse({
-          errCode: "closeFail",
-          message: "websocket socket.close faile by close()",
+          errCode: 9008,
+          message: "websocket socket.close() faile by close()",
         });
       }
     });
@@ -1120,7 +1066,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1171,6 +1117,7 @@ class WebFxScanServer {
               deviceName: device,
             });
             const { data } = deviceCap;
+            self.devLog("[ScanLib] get device cap: ", deviceCap);
             v2ScannerOption = data;
           } catch (error) {
             self.devLog("[ScanLib] v2ScannerOption error:", v2ScannerOption);
@@ -1217,7 +1164,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1448,11 +1395,11 @@ class WebFxScanServer {
 
         const availablePaperSize = longpaper
           ? {
-              value: filterPaperSize.push("LongPaper").unshift("Auto"),
+              value: ["Auto", ...filterPaperSize, "LongPaper"],
               type: "list",
             }
           : {
-              value: filterPaperSize,
+              value: ["Auto", ...filterPaperSize],
               type: "list",
             };
 
@@ -1503,7 +1450,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1578,7 +1525,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1618,7 +1565,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1626,22 +1573,30 @@ class WebFxScanServer {
     }
   }
 
+  // cache autoScan's callback
+  async setAutoScanCallback(callback) {
+    const self = this;
+    self.cache.autoScanCallback = callback;
+    return Promise.resolve(
+      WebFxScanUtility.successResponse({
+        message: "OK",
+      })
+    );
+  }
+
   // API: set scanner properties
   async setProperty(props) {
-    const { scanParam, autoScan, callback } = props;
+    const { scanParam } = props;
+    const { autoScan } = scanParam;
     const self = this;
     let fixScanParam = {};
 
-    if (autoScan) {
-      fixScanParam = {
-        ...self.cache.scannerProperty,
-        autoscan: true,
-      };
-      self.cache.autoScanCallback = callback;
-    } else {
-      // parser
-      fixScanParam = WebFxScanScanner.paramFormat(scanParam);
+    if (typeof autoScan === "boolean") {
+      self.cache.isAutoScan = autoScan;
     }
+    fixScanParam = {
+      ...WebFxScanScanner.paramFormat(scanParam),
+    };
 
     // cahce for some API
     self.cache.scannerProperty = fixScanParam;
@@ -1675,7 +1630,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1700,6 +1655,29 @@ class WebFxScanServer {
       const { type, func, data } = fixData;
       const { err_code = 0, message } = data;
 
+      // auto scan process
+      if (self.cache.isAutoScan && !self.apiList.scan.isActive) {
+        if (err_code !== 0) {
+          return;
+        }
+        if (func === "LIBWFX_NOTIFY_IMAGE_DONE") {
+          const { name, base64, recognizedata, md5 = "" } = message;
+          const { fullName, ext } = WebFxScanUtility.pathParser(name);
+          const fixedBase64 = WebFxScanUtility.base64Parser(base64, ext);
+          // Execute autoScanCallback when get response
+          if (typeof self.cache.autoScanCallback === "function") {
+            self.cache.autoScanCallback({
+              fileName: fullName,
+              base64: fixedBase64,
+              ocrText: recognizedata,
+              md5,
+            });
+          }
+        }
+        return;
+      }
+
+      // standard scan() process
       if (err_code !== 0) {
         self.cache.scanIndex = 0;
         self.promiseReject(
@@ -1730,42 +1708,36 @@ class WebFxScanServer {
         const { name, base64, recognizedata, md5 = "" } = message;
         const { fullName, ext } = WebFxScanUtility.pathParser(name);
         const fixedBase64 = WebFxScanUtility.base64Parser(base64, ext);
-        // Execute autoScanCallback when get response
-        if (typeof self.cache.autoScanCallback === "function") {
-          self.cache.autoScanCallback({
+
+        // cache image for scan
+        self.cache.scanIndex = self.cache.scanIndex + 1;
+        self.cache.tempScanData.push({
+          fileName: fullName,
+          base64: fixedBase64,
+          ocrText: recognizedata,
+          md5,
+        });
+
+        // Execute scanCallback when get response
+        if (typeof self.cache.scanCallback === "function") {
+          // The imagefmt parameter will cause an additional return, containing the merged files.
+          // Here, it's necessary to provide a status indicating that this file is a merged file rather than a scanned file, mainly for progress determination.
+          const isMergeExist = ["pdf", "spdf", "ofd", "sofd", "tif"].includes(
+            self.cache.scannerProperty?.imagefmt
+          );
+          const status =
+            isMergeExist && ["pdf", "ofd", "tif"].includes(ext)
+              ? "mergeFile"
+              : "scanning";
+
+          self.cache.scanCallback({
             fileName: fullName,
             base64: fixedBase64,
             ocrText: recognizedata,
-          });
-        } else {
-          // cache image for scan
-          self.cache.scanIndex = self.cache.scanIndex + 1;
-          self.cache.tempScanData.push({
-            fileName: fullName,
-            base64: fixedBase64,
-            ocrText: recognizedata,
+            page: self.cache.scanIndex,
+            status: status,
             md5,
           });
-          // Execute scanCallback when get response
-          if (typeof self.cache.scanCallback === "function") {
-            // The imagefmt parameter will cause an additional return, containing the merged files.
-            // Here, it's necessary to provide a status indicating that this file is a merged file rather than a scanned file, mainly for progress determination.
-            const isMergeExist = ["pdf", "spdf", "ofd", "sofd", "tif"].includes(
-              self.cache.scannerProperty?.imagefmt
-            );
-            const status =
-              isMergeExist && ["pdf", "ofd", "tif"].includes(ext)
-                ? "mergeFile"
-                : "scanning";
-
-            self.cache.scanCallback({
-              fileName: fullName,
-              base64: fixedBase64,
-              ocrText: recognizedata,
-              page: self.cache.scanIndex,
-              status: status,
-            });
-          }
         }
 
         return;
@@ -1774,7 +1746,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1835,7 +1807,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1892,7 +1864,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1954,7 +1926,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -1995,7 +1967,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -2042,7 +2014,7 @@ class WebFxScanServer {
       self.promiseReject(
         apiItem,
         WebFxScanUtility.failureResponse({
-          errCode: "unknown",
+          errCode: 9999,
           message: error,
           apiItem,
         })
@@ -2083,15 +2055,15 @@ class WebFxScan {
       typeof errorCallback !== "function" ||
       typeof closeCallback !== "function"
     ) {
-      WebFxScanUtility.failureResponse({
-        errCode: "Parameter error",
+      WebFxScanUtility.throwError({
+        errCode: 9010,
         message:
           "errorCallback or closeCallback is not function. It require function type.",
       });
     }
     if (typeof ip !== "string" || typeof port !== "string") {
-      WebFxScanUtility.failureResponse({
-        errCode: "Parameter error",
+      WebFxScanUtility.throwError({
+        errCode: 9010,
         message: "ip or port is not string. It require string type.",
       });
     }
@@ -2121,24 +2093,19 @@ class WebFxScan {
   }
 
   setScanner(props) {
-    const { autoScan = false, callback = () => {}, ...scanParam } = props;
-    if (typeof autoScan !== "boolean") {
-      WebFxScanUtility.failureResponse({
-        errCode: "Parameter error",
-        message: "autoScan is not boolean. It require boolean type.",
-      });
-    }
+    const { ...scanParam } = props;
+    return this.serverInstance.setProperty({ scanParam });
+  }
+
+  setAutoScanCallback(props) {
+    const { callback = () => {} } = props;
     if (typeof callback !== "function") {
-      WebFxScanUtility.failureResponse({
-        errCode: "Parameter error",
+      WebFxScanUtility.throwError({
+        errCode: 9010,
         message: "callback is not function. It require function type.",
       });
     }
-    return this.serverInstance.setProperty({ scanParam, autoScan, callback });
-  }
-
-  autoScan(callback) {
-    return this.serverInstance.setProperty({ autoScan: true, callback });
+    return this.serverInstance.setAutoScanCallback(callback);
   }
 
   scan(props = {}) {

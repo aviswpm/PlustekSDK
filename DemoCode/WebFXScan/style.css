@@ -5,6 +5,11 @@ body {
     width: 100vw;
     height: 100vh;
   }
+
+  .fixed-header {
+    position: fixed;
+  }
+
   .wrapper {
     padding: 100px 40px 40px 40px;
     display: flex;

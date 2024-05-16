@@ -11,28 +11,28 @@
 
 #define LIBWFX_DLLNAME _T("LibWebFXScan.dll")
 
-#define	LIBWFX_API_INIT                     "LibWFX_Init"
-#define	LIBWFX_API_INITEX                     "LibWFX_InitEx"
-#define	LIBWFX_API_DEINIT                   "LibWFX_DeInit"
-#define LIBWFX_API_GET_DEVICESLIST          "LibWFX_GetDeviesList"
+#define	LIBWFX_API_INIT							"LibWFX_Init"
+#define	LIBWFX_API_INITEX						"LibWFX_InitEx"
+#define	LIBWFX_API_DEINIT						"LibWFX_DeInit"
+#define LIBWFX_API_GET_DEVICESLIST				"LibWFX_GetDeviesList"
 #define LIBWFX_API_GET_DEVICESLIST_WITHSERIAL	"LibWFX_GetDeviesListWithSerial"
-#define LIBWFX_API_SET_PROPERTY             "LibWFX_SetProperty"
-#define	LIBWFX_API_START_SCAN               "LibWFX_StartScan"
-#define	LIBWFX_API_CALIBRATE                "LibWFX_Calibrate"
-#define	LIBWFX_API_ECOCONTROL               "LibWFX_ECOControl"
-#define LIBWFX_API_PAPER_READY		        "LibWFX_PaperReady"
-#define	LIBWFX_API_CLOSE_DEVICE             "LibWFX_CloseDevice"
-#define	LIBWFX_API_EJECTPAPER_CONTORL       "LibWFX_EjectPaperControl"
+#define LIBWFX_API_SET_PROPERTY					"LibWFX_SetProperty"
+#define	LIBWFX_API_START_SCAN					"LibWFX_StartScan"
+#define	LIBWFX_API_CALIBRATE					"LibWFX_Calibrate"
+#define	LIBWFX_API_ECOCONTROL					"LibWFX_ECOControl"
+#define LIBWFX_API_PAPER_READY					"LibWFX_PaperReady"
+#define	LIBWFX_API_CLOSE_DEVICE					"LibWFX_CloseDevice"
+#define	LIBWFX_API_EJECTPAPER_CONTORL			"LibWFX_EjectPaperControl"
 #define	LIBWFX_API_EJECTPAPER_CONTORL_WITHMSG   "LibWFX_EjectPaperControlWithMsg"
-#define	LIBWFX_API_GET_PAPERSTATUS          "LibWFX_GetPaperStatus"
-#define	LIBWFX_API_MERGETOPDF				"LibWFX_MergeToPdf"
-#define	LIBWFX_API_ISWINDOWEXIST		    "LibWFX_IsWindowExist"
-#define	LIBWFX_API_GETPRODUCTNAMEDAT        "LibWFX_GetProductNameDat"
-#define LIBWFX_API_GETLASTERRORCODE         "LibWFX_GetLastErrorCode"
-#define LIBWFX_API_SYNCHRONIZESCAN          "LibWFX_SynchronizeScan"
-#define LIBWFX_API_GETCERTIFICATEPERMISSION   "LibWFX_GetCertificatePermission"
-#define	LIBWFX_API_RECYCLESAVEFOLDER        "LibWFX_RecycleSaveFolder"
-#define LIBWFX_API_WRITEAPLOG               "LibWFX_WriteAPLog"
+#define	LIBWFX_API_GET_PAPERSTATUS				"LibWFX_GetPaperStatus"
+#define	LIBWFX_API_MERGETOPDF					"LibWFX_MergeToPdf"
+#define	LIBWFX_API_ISWINDOWEXIST				"LibWFX_IsWindowExist"
+#define	LIBWFX_API_GETPRODUCTNAMEDAT			"LibWFX_GetProductNameDat"
+#define LIBWFX_API_GETLASTERRORCODE				"LibWFX_GetLastErrorCode"
+#define LIBWFX_API_SYNCHRONIZESCAN				"LibWFX_SynchronizeScan"
+#define LIBWFX_API_GETCERTIFICATEPERMISSION		"LibWFX_GetCertificatePermission"
+#define	LIBWFX_API_RECYCLESAVEFOLDER			"LibWFX_RecycleSaveFolder"
+#define LIBWFX_API_WRITEAPLOG					"LibWFX_WriteAPLog"
 
 typedef void* WFXDevHandle; 
 
@@ -92,10 +92,11 @@ typedef enum _ENUM_LIBWFX_ERRCODE
 	LIBWFX_ERRCODE_FILE_NO_EXIST,				/**< When the RemoveFile is executed, the file does not exist */
 	LIBWFX_ERRCODE_PATH_TOO_LONG,				/**< Execution file address is too long */
 	LIBWFX_ERRCODE_COMMAND_KEY_MISMATCH,		/**< There is a unsatisfied type in the command */
-	LIBWFX_ERRCODE_SCANNING,		            /**< The scanning process is not over yet*/
+	LIBWFX_ERRCODE_SCANNING,		            /**< The scanning process is not over yet */
 	LIBWFX_ERRCODE_FILE_OCCUPIED,               /**< When the RecycleSaveFolder is executed, the file or folder is occupied */
 	LIBWFX_ERRCODE_SAVEPATH_ERROR,              /**< When the RecycleSaveFolder is executed, the save path format error */
 	LIBWFX_ERRCODE_TIMEOUT,                     /**< Timeout error */
+	LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
 } ENUM_LIBWFX_ERRCODE;
 
 typedef enum _ENUM_LIBWFX_EVENT_CODE
@@ -119,7 +120,7 @@ typedef enum _ENUM_LIBWFX_EVENT_CODE
 	LIBWFX_EVENT_OVER_TIME_SCAN,
 	LIBWFX_EVENT_CANCEL_SCAN,
 	LIBWFX_EVENT_CAMERA_RGB_DISLOCATION,
-	LIBWFX_EVENT_CAMERA_TIMEOUT
+	LIBWFX_EVENT_CAMERA_TIMEOUT,
 } ENUM_LIBWFX_EVENT_CODE;
 
 typedef enum _ENUM_LIBWFX_EXCEPTION_CODE
