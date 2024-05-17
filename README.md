@@ -1,6 +1,6 @@
 # Plustek SDK
 ### About Plustek Software Development Kit (SDK)
-Plustek offers a Software Development Kit (SDK) to enable developers to integrate scanning functionality into their applications.
+Plustek offers a Software Development Kit (SDK) to enable developers to integrate scanning and recognition functionality into their applications.
  
 The Plustek SDK is offered in two variations:
  
@@ -14,7 +14,7 @@ For advanced services or tailored solutions, paid consultations are available, p
 ### Installation
  
 - Important Note:
- 
+    - Before using LibWFXDemo.exe, please ensure that PlustekSDK_LDSetup is installed.
 	- Before installing the Plustek SDK, ensure you have the compatible scanner driver installed and the scanner is connected to your computer.
 	- The provided demo code for LibFXScan requires Microsoft Visual C++ 2015 Redistributable for compilation.
     - .NET Framework version 4.0 or above is required.
@@ -22,7 +22,7 @@ For advanced services or tailored solutions, paid consultations are available, p
 - Installation Steps:
  
 	1. Clone Demo Code: Obtain the demo code for your chosen SDK version from GitHub .
-	2. Install the SDK: Download and run the [installer] based on your operating system (32-bit or 64-bit).
+	2. Install the SDK: Download and run the PlustekSDK_LDSetup based on your operating system (32-bit or 64-bit).
  
 ### Documentation
 - Documentation: Plustek provides comprehensive documentation for its SDKs, including:
@@ -33,7 +33,7 @@ For advanced services or tailored solutions, paid consultations are available, p
 - This documentation will equip developers with the necessary information to effectively utilize the Plustek SDK in their projects.
 
 ### 關於 Plustek 軟體開發套件 (SDK)
-Plustek 提供軟體開發套件 (SDK)，使開發人員能夠將掃描功能整合到他們的應用程式中。
+Plustek 提供軟體開發套件 (SDK)，使開發人員能夠將掃描辨識功能整合到他們的應用程式中。
 
 Plustek SDK 提供兩種版本：
 
@@ -46,12 +46,13 @@ Plustek SDK 提供兩種版本：
   
 ### 安裝
 - 重要的提示：
+    - 使用範例LibWFXDemo.exe前，請務必確認已安裝PlustekSDK_LDSetup。
     - 在安裝 Plustek SDK 之前，請確保您已安裝相容的掃描器驅動程式並且掃描器已連接到您的電腦。
     - 提供的 LibFXScan 示範程式碼需要 Microsoft Visual C++ 2015 Redistributable 來編譯。
     - 需使用 .NET Framework 版本 4.0 或以上
 - 安裝步驟
     1. 複製示範程式碼：從 GitHub 取得您選擇的 SDK 版本的示範程式碼。
-    2. 安裝SDK：根據您的作業系統（32位元或64位元）下載並執行[安裝程式]。
+    2. 安裝SDK：根據您的作業系統（32位元或64位元）下載並執行PlustekSDK_LDSetup。
 
 ### 文件
 - 文件：Plustek 為其 SDK 提供全面的文檔，包括：
@@ -64,9 +65,6 @@ Plustek SDK 提供兩種版本：
 
     [LibFXScan 說明文件]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
     [LibFXScan Documentation]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
-
-    [安裝程式]:https://aviswpm.github.io/download/
-    [installer]:https://aviswpm.github.io/download/
 
     [WebFXScan Javascript 說明文件]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
     [WebFXScan JavaScript Library Documentation]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
