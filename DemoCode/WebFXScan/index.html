@@ -2,31 +2,236 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>WebSDK2.0 Demo</title>
+    <title>WebFxScan Demo</title>
+    <script src="bootstrap.bundle.min.js"></script>
     <script src="jquery.3.6.4.js"></script>
+    <script src="jquery.json-viewer.js"></script>
     <script src="scan.js"></script>
     <script src="main.js"></script>
+    <link href="bootstrap.min.css" rel="stylesheet" />
+    <link href="jquery.json-viewer.css" rel="stylesheet" />
     <link rel="stylesheet" href="style.css" />
   </head>
-  <body>
-    <div id="viewport">
-      <div class="fixed-header">
-        <p>WebFxScan JS Library version: 1.1.1.24153</p>
-        <p>Github version: 2.0.2</p>
+  <body class="custom-scrollbar custom-break-point">
+    <div class="vh-100 d-flex flex-column">
+      <!-- Header -->
+      <div class="custom-bg-header d-flex justify-content-start">
+        <p class="m-0 p-3 h4 text-white">WebFxScan Demo</p>
       </div>
-      <div class="wrapper">
-        <button disabled="disabled" id="scan">scan</button>
-        <div class="imgWrapper">
-          <img id="img-zone" />
+      <!-- Body -->
+      <div class="container-fluid row flex-grow-1 p-0 m-0">
+        <!-- Sidebar / Control Panel -->
+        <div class="custom-bg-sider col-3 p-3 d-flex flex-column">
+          <form id="main-form" class="flex-grow-1 d-flex flex-column">
+            <!-- Select: Device name -->
+            <div class="row mb-3">
+              <label
+                for="device-name"
+                class="fw-bold align-self-center m-0 col-6 form-label"
+                >Device Name</label
+              >
+              <div class="col-6">
+                <select class="form-select" id="device-name">
+                  <!-- Dynamic content will be inserted here by script -->
+                </select>
+              </div>
+            </div>
+            <!-- Select: Source -->
+            <div class="row mb-3">
+              <label
+                for="source"
+                class="fw-bold align-self-center m-0 col-6 form-label"
+                >Source</label
+              >
+              <div class="col-6">
+                <select class="form-select" id="source">
+                  <!-- Dynamic content will be inserted here by script -->
+                </select>
+              </div>
+            </div>
+            <!-- Select: Recognize type -->
+            <div class="row mb-3">
+              <label
+                for="recognizer-type"
+                class="fw-bold align-self-center m-0 col-6 form-label"
+              >
+                Recognizer Type
+              </label>
+              <div class="col-6">
+                <select class="form-select" id="recognizer-type">
+                  <!-- Dynamic content will be inserted here by script -->
+                </select>
+              </div>
+            </div>
+            <!-- Input: Custom Recognize type -->
+            <div id="custom-recognize-type" class="d-none mb-3">
+              <input
+                type="input"
+                class="w-100 p-3 form-check-input"
+                placeholder="Recognize Type"
+              />
+            </div>
+            <!-- Button: Set Scanner -->
+            <button
+              id="set-scanner"
+              type="button"
+              class="custom-button-set-scanner text-white fw-bold btn w-100 mb-3"
+            >
+              Set Scanner
+            </button>
+            <!-- Button: Scan -->
+            <button
+              id="scan"
+              type="button"
+              class="custom-button-scan text-white fw-bold btn w-100 mb-3"
+            >
+              Scan
+            </button>
+            <!-- VTM 300 -->
+            <div class="d-flex mb-1 justify-content-between">
+              <label class="m-0 align-self-center fw-bold form-label"
+                >VTM300 Eject Paper</label
+              >
+              <div class="d-flex gap-2">
+                <button
+                  id="eject-back"
+                  type="button"
+                  class="custom-button-scan text-white fw-bold btn"
+                >
+                  Back
+                </button>
+                <button
+                  id="eject-front"
+                  type="button"
+                  class="custom-button-scan text-white fw-bold btn"
+                >
+                  Front
+                </button>
+              </div>
+            </div>
+            <!-- Log Card: websocket message log -->
+            <div class="d-flex mb-1 justify-content-between">
+              <label class="m-0 align-self-center fw-bold form-label"
+                >Message</label
+              >
+              <button
+                id="clear-message"
+                type="button"
+                class="custom-button-clear fw-bold btn"
+              >
+                Clear
+              </button>
+            </div>
+            <div class="h-100 d-flex flex-column flex-grow-1">
+              <div
+                id="message-container"
+                class="custom-card custom-scrollbar overflow-auto card flex-grow-1"
+              >
+                <div class="custom-card-body card-body">
+                  <div id="log-container" class="accordion">
+                    <!-- Dynamic content will be inserted here by script -->
+                  </div>
+                </div>
+              </div>
+            </div>
+          </form>
         </div>
-        <span id="filename"></span>
+        <!-- Image Display -->
+        <div class="col-9 d-flex flex-column p-0 m-0">
+          <div class="custom-bg-content">
+            <div
+              class="d-flex flex-column align-items-center justify-content-center flex-grow-1 h-100"
+            >
+              <div
+                class="custom-page-container d-flex align-items-center justify-content-center w-100"
+              >
+                <div
+                  class="page-navi-container d-flex align-items-center justify-content-center p-2 gap-2"
+                >
+                  <div id="page-prev" class="custom-arrow-button">&lt;</div>
+
+                  <input
+                    type="number"
+                    id="current-page-input"
+                    min="0"
+                    value="0"
+                  />
+                  /
+                  <div id="total-pages">0</div>
+
+                  <div id="page-next" class="custom-arrow-button">&gt;</div>
+                </div>
+                <div class="custom-button-recognize-container">
+                  <button
+                    class="custom-button-recognize text-white btn"
+                    disabled="true"
+                    id="show-recognize"
+                  >
+                    recognize
+                  </button>
+                </div>
+              </div>
+              <div
+                class="custom-image-container h-100 w-100 p-3 d-flex align-items-center justify-content-center overflow-hidden"
+              >
+                <div
+                  id="sample-bg"
+                  class="text-center bg-light w-50 h-100"
+                ></div>
+                <img id="img-zone" />
+              </div>
+            </div>
+          </div>
+          <div class="custom-version-container fw-bold p-2 text-end">
+            <span>Version: </span>
+            <span id="version"></span>
+          </div>
+        </div>
       </div>
-      <div id="status" class="connect-color">Device is connecting...</div>
     </div>
-    <div class="loading-mask hide">
+    <!-- Loading mask -->
+    <div class="custom-loading-mask d-none">
       <div class="loader"></div>
+    </div>
+    <!-- Window -->
+    <div
+      id="ocrtext-window"
+      class="custom-modal-container custom-break-point d-none"
+    >
+      <div class="custom-modal-mask"></div>
+      <div class="custom-window">
+        <div class="custom-window-header">
+          <span class="custom-window-title text-white">Message</span>
+          <span class="custom-close-btn">&times;</span>
+        </div>
+        <div class="custom-window-body">
+          <p class="custom-window-content">
+            <!-- Dynamic content will be inserted here by script -->
+          </p>
+        </div>
+      </div>
+    </div>
+    <!-- Properties Window -->
+    <div
+      id="set-scanner-window"
+      class="custom-modal-container custom-break-point d-none"
+    >
+      <div class="custom-modal-mask"></div>
+      <div class="custom-window">
+        <div class="custom-window-header">
+          <span class="custom-window-title text-white">Set Scanner</span>
+          <span class="custom-close-btn">&times;</span>
+        </div>
+        <div class="custom-window-body d-flex">
+          <textarea class="form-control" rows="3"></textarea>
+        </div>
+        <div
+          class="p-2 d-flex align-items-center justify-content-center custom-window-booter"
+        >
+          <button class="custom-set-scanner-window-button btn text-white">Set Scanner</button>
+        </div>
+      </div>
     </div>
   </body>
 </html>

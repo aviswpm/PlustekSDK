@@ -394,7 +394,9 @@ class WebFxScanScanner {
     barcodeType: { type: "boolean", value: "barcode-type" },
     swdeskew: { type: "boolean", value: "swdeskew" },
     swcrop: { type: "boolean", value: "swcrop" },
-    innerCutted: { type: "number", value: "innercutted" },
+    swcropBgMin: { type: "number", value: "swcropbgmin" },
+    swcropBgMax: { type: "number", value: "swcropbgmax" },
+    innerCutted: { type: "string", value: "innercutted" },
     crop: { type: "string", value: "crop" },
     multicrop: { type: "number", value: "multicrop" },
     hasBlackImage: { type: "boolean", value: "hasblackimage" },
@@ -415,6 +417,7 @@ class WebFxScanScanner {
     base64enc: { type: "boolean", value: "base64enc" },
     orig: { type: "boolean", value: "orig" },
     log: { type: "boolean", value: "log" },
+    paperOrientation: { type: "string", value: "paper-orientation" },
   };
 
   // Get all properties except for interfaceTable.
@@ -446,7 +449,11 @@ class WebFxScanScanner {
 
     // In webFXScan 2.0, when scanning, this parameter must be present to return base64. It will be used by default in typical scenarios.
     fixParamObj = { ...fixParamObj, base64enc: true };
-
+    // compatible with sdk lib param
+    Object.entries(self.interfaceTable).map((propertyItem) => {
+      const serverLibProperty = propertyItem[1].value;
+      self.interfaceTable[serverLibProperty] = propertyItem[1];
+    });
     Object.keys(fixParamObj).map(function (key) {
       if (key in self.interfaceTable) {
         const fixedKey = self.interfaceTable[key].value;
@@ -476,11 +483,11 @@ class WebFxScanUtility {
     9002: "Connect fail.",
     9003: "API is busy, the same API cannot be executed synchronously multiple times.",
     9004: "Connection is already exist.",
-    9005: "Websocket connect abort by close()",
-    9006: "Websocket closed.",
-    9007: "Connection error occurred, message depend on event.message.",
-    9008: "Websocket socket.close() failed by close().",
-    9009: "Connection timed out, message depend on API name.",
+    9005: "Connect abort by close()",
+    9006: "An unexpected close event occurred during connect().",
+    9007: "An unexpected error event occurred during connect(), the event message is: ",
+    9008: "An unexpected error occurred during close().",
+    9009: "Connection timed out: ",
     9010: "Parameter error, message depend on kind of parameter",
     9999: "Unexpected error.",
   };
@@ -582,19 +589,22 @@ class WebFxScanServer {
     this.state.mode = mode;
   }
 
-  version = "1.1.1.24153";
+  version = "1.1.7.24335";
   state = {
     socket: null,
     ip: "",
     port: "",
-    timeout: 60000, // ms
+    timeout: 60000, // unit: ms
     mode: "prod", // "prod" | "dev", dev provide more console.log
   };
+
+  // ************************************************************************
   // webFXScan api list, and the same API cannot be enabled at the same time.
   // command: server side method
   // receive: server side response mapping (multi maybe)
   // method: lib business logic for [command]
   // callback: lib business logic for [receive]
+  // ************************************************************************
   apiList = {
     close: {
       command: { type: "", func: "" },
@@ -682,9 +692,11 @@ class WebFxScanServer {
         { type: "return", func: "LibWFX_AsynchronizeScan" },
         { type: "callback", func: "LIBWFX_NOTIFY_IMAGE_DONE" },
         { type: "callback", func: "LIBWFX_NOTIFY_END" },
+        { type: "callback", func: "LIBWFX_EVENT_CODE", eventCode: 7 },
       ],
       method: this.scan,
       callback: this.callbackScan,
+      tmpParam: {},
       promise: null,
       isActive: false,
       timeoutId: null,
@@ -740,13 +752,43 @@ class WebFxScanServer {
       timeoutId: null,
       timeout: null,
     },
+    calibrate: {
+      command: { type: "call", func: "LibWFX_Calibrate" },
+      receive: [{ type: "return", func: "LibWFX_Calibrate" }],
+      method: this.calibrate,
+      callback: this.callbackCalibrate,
+      promise: null,
+      isActive: false,
+      timeoutId: null,
+      timeout: null,
+    },
+    ejectPaper: {
+      command: { type: "call", func: "LibWFX_EjectPaperControl" },
+      receive: [{ type: "return", func: "LibWFX_EjectPaperControl" }],
+      method: this.ejectPaper,
+      callback: this.callbackEjectPaper,
+      promise: null,
+      isActive: false,
+      timeoutId: null,
+      timeout: null,
+    },
+  };
+
+  // do extra if get event code from server, like button push
+  eventList = {
+    buttonPush: {
+      receive: [{ type: "callback", func: "LIBWFX_EVENT_CODE", eventCode: 7 }],
+      callback: this.eventScan,
+    },
   };
 
   initCache = {
     scannerProperty: {},
     tempScanData: [], // cache scan() response data
-    autoScanCallback: null, // cache callback with autoScan()
+    autoScanCallback: null, // cache callback with autoScan
+    beforeAutoScanCallback: null, // cache callback before execute autoScan
     scanCallback: null, // cache callback with scan()
+    socketMsgCollector: null, // collect websocker send/receive message
     scanIndex: 0, // progress
     isAutoScan: false,
   };
@@ -754,20 +796,19 @@ class WebFxScanServer {
   isDisconnecting = false;
 
   // bridge for apiList
-  notify(apiName, data = null, timeout = null) {
+  notify(apiName, data = null, timeout = null, tmpParam) {
     const self = this;
     if (!(apiName in self.apiList)) {
       WebFxScanUtility.throwError({
         errCode: 9001,
-        message: "API is not exist.",
+        message: WebFxScanUtility.libErrorCode[9001],
         apiName,
       });
     }
     if (self.apiList[apiName].isActive) {
       WebFxScanUtility.throwError({
         errCode: 9003,
-        message:
-          "API is busy, the same API cannot be executed synchronously multiple times.",
+        message: WebFxScanUtility.libErrorCode[9003],
         apiName,
       });
     }
@@ -779,6 +820,9 @@ class WebFxScanServer {
       self.apiList[apiName].isActive = true;
       if (typeof timeout === "number") self.apiList[apiName].timeout = timeout;
 
+      // set tmpParam
+      self.apiList[apiName].tmpParam = tmpParam;
+
       // send ws api
       const { type, func } = self.apiList[apiName].command;
       const message = {
@@ -786,15 +830,26 @@ class WebFxScanServer {
         func,
         ...(data === null ? {} : { data: data }),
       };
-      self.devLog(
-        "[ScanLib] websocket socket.send data:",
-        JSON.stringify(message)
-      );
-      self.state.socket.send(JSON.stringify(message));
+      self.mySocketSend(JSON.stringify(message));
 
       // reject if timeout
       self.startTimeout(apiName);
     });
+  }
+
+  mySocketSend(message) {
+    const self = this;
+    self.devLog("[ScanLib] websocket socket.send data:", message);
+
+    try {
+      // collect messgae for dev
+      if (typeof self.cache.socketMsgCollector === "function") {
+        self.cache.socketMsgCollector(message, "up");
+      }
+      self.state.socket.send(message);
+    } catch (error) {
+      console.warn("socket error:", error);
+    }
   }
 
   // reset class' state, cache, apiList
@@ -832,7 +887,9 @@ class WebFxScanServer {
         self.apiList[apiName],
         WebFxScanUtility.failureResponse({
           errCode: 9009,
-          message: `error: ${apiName} timeout > ${timeout / 1000}s`,
+          message:
+            WebFxScanUtility.libErrorCode[9009] +
+            `${apiName} timeout > ${timeout / 1000}s`,
         })
       );
     }, timeout);
@@ -881,6 +938,25 @@ class WebFxScanServer {
     }
   }
 
+  // ***********************
+  // *** Event Implement ***
+  // ***********************
+
+  // When an event code of 7 is received from the server, it means the scan method should be executed on the client side.
+  eventScan(self, fixData) {
+    // send scan ws api
+    const { type, func } = self.apiList["scan"].command;
+    const message = { type, func };
+    if (typeof self.cache.beforeAutoScanCallback === "function") {
+      self.cache.beforeAutoScanCallback();
+    }
+    self.mySocketSend(JSON.stringify(message));
+  }
+
+  // *********************
+  // *** API Implement ***
+  // *********************
+
   // API: connect webFXScan server
   async connect(props) {
     const self = this;
@@ -902,7 +978,7 @@ class WebFxScanServer {
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
             errCode: 9004,
-            message: "Connection is already exist.",
+            message: WebFxScanUtility.libErrorCode[9004],
           })
         );
         return;
@@ -916,7 +992,9 @@ class WebFxScanServer {
       let socket;
 
       try {
-        socket = new WebSocket("ws://" + ip + ":" + port + "/webscan2");
+        self.state.socket = new WebSocket(
+          "ws://" + ip + ":" + port + "/webscan2"
+        );
       } catch (e) {
         self.devLog("[ScanLib] connect() new WebSocket error:", e);
         // self.state.socket = null;
@@ -924,15 +1002,15 @@ class WebFxScanServer {
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
             errCode: 9002,
-            message: "Connect fail.",
+            message: WebFxScanUtility.libErrorCode[9002],
           })
         );
         return;
       }
 
-      socket.onopen = () => {
+      self.state.socket.onopen = () => {
         self.devLog("[ScanLib] open connection success");
-        self.state.socket = socket;
+        // self.state.socket = socket;
         self.promiseResolve(
           self.apiList.connect,
           WebFxScanUtility.successResponse({
@@ -940,7 +1018,7 @@ class WebFxScanServer {
           })
         );
       };
-      socket.onclose = function (event) {
+      self.state.socket.onclose = function (event) {
         // When executing close(), it needs to wait until onClose is triggered to consider it as the promise being fulfilled.
         if (self.isDisconnecting) {
           self.isDisconnecting = false;
@@ -950,42 +1028,93 @@ class WebFxScanServer {
               message: "OK",
             })
           );
+          self.promiseReject(
+            self.apiList.connect,
+            WebFxScanUtility.failureResponse({
+              errCode: 9005,
+              message: WebFxScanUtility.libErrorCode[9005],
+            })
+          );
         }
 
         // Standard handling, occurring when the server disconnects or due to other reasons.
         self.devLog("[ScanLib] onclose event:", event);
         self.initConnectState();
         closeCallback(event);
+
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
             errCode: 9006,
-            message: "Websocket closed.",
+            message: WebFxScanUtility.libErrorCode[9006],
           })
         );
       };
-      socket.onerror = function (event) {
+      self.state.socket.onerror = function (event) {
         self.devLog("[ScanLib] onerror event:", event);
+        // reject if close() occurred.
+        if (self.isDisconnecting) {
+          self.isDisconnecting = false;
+          self.promiseResolve(
+            self.apiList.close,
+            WebFxScanUtility.successResponse({
+              message: "OK",
+            })
+          );
+          self.promiseReject(
+            self.apiList.connect,
+            WebFxScanUtility.failureResponse({
+              errCode: 9005,
+              message: WebFxScanUtility.libErrorCode[9005],
+            })
+          );
+        }
+
         errorCallback(event);
         self.promiseReject(
           self.apiList.connect,
           WebFxScanUtility.failureResponse({
             errCode: 9007,
-            message: event.message,
+            message: WebFxScanUtility.libErrorCode[9007] + event.message,
           })
         );
       };
-      socket.onmessage = function (event) {
+      self.state.socket.onmessage = function (event) {
         try {
           self.devLog("[ScanLib] websocket onmessage event.data:", event.data);
           const fixData = WebFxScanUtility.sdkV2MessageParser(event.data);
           const { type, func, data } = fixData;
+          const { event_code = 0 } = data;
 
+          // collect messgae for dev
+          if (typeof self.cache.socketMsgCollector === "function") {
+            self.cache.socketMsgCollector(event.data, "down");
+          }
+
+          // map apiList then excute callback
           Object.keys(self.apiList).map((apiName) => {
             self.apiList[apiName].receive.map((receiveItem) => {
               const { type: receiveType, func: receiveFunc } = receiveItem;
               if (receiveType === type && receiveFunc === func) {
                 self.apiList[apiName].callback(self, fixData);
+              }
+            });
+          });
+
+          // map eventList then excute callback
+          Object.keys(self.eventList).map((eventName) => {
+            self.eventList[eventName].receive.map((receiveItem) => {
+              const {
+                type: receiveType,
+                func: receiveFunc,
+                eventCode,
+              } = receiveItem;
+              if (
+                receiveType === type &&
+                receiveFunc === func &&
+                eventCode === event_code
+              ) {
+                self.eventList[eventName].callback(self, fixData);
               }
             });
           });
@@ -1002,23 +1131,14 @@ class WebFxScanServer {
     return new Promise((resolve, reject) => {
       self.apiList.close.promise = { resolve, reject };
       self.apiList.close.isActive = true;
-      /* if connect() is running, it will abort it */
-      if (self.apiList.connect.isActive) {
-        self.promiseReject(
-          self.apiList.connect,
-          WebFxScanUtility.failureResponse({
-            errCode: 9005,
-            message: "websocket connect abort by close()",
-          })
-        );
-      }
+
       /* reset status */
       try {
         // if connection is exist
         if (self.state.socket) {
-          self.state.socket.close();
           // wait for websocket onClose
           self.isDisconnecting = true;
+          self.state.socket.close();
         } else {
           self.promiseResolve(
             self.apiList.close,
@@ -1030,7 +1150,7 @@ class WebFxScanServer {
       } catch (e) {
         WebFxScanUtility.failureResponse({
           errCode: 9008,
-          message: "websocket socket.close() faile by close()",
+          message: WebFxScanUtility.libErrorCode[9008],
         });
       }
     });
@@ -1106,8 +1226,8 @@ class WebFxScanServer {
         exportOption,
       } = WebFxScanScanner.getOptions();
       const options = [];
-      const groupOptions = [];
-      szDevicesList.map((device) => {
+      szDevicesList.map((device, idx) => {
+        const sz = szSerialList?.[idx];
         const type = devices[device];
         const confEnum = scannerOption[type];
         let v2ScannerOption = false;
@@ -1123,26 +1243,9 @@ class WebFxScanServer {
             self.devLog("[ScanLib] v2ScannerOption error:", v2ScannerOption);
           }
 
-          groupOptions.push({
-            scanId: device,
-            scanOption: {
-              deviceName: { value: szDevicesList, type: "list" },
-              // ...confEnum,
-              ...(v2ScannerOption ? v2ScannerOption : confEnum),
-              ...scanOption,
-            },
-            imageOption: {
-              ...imageOption,
-            },
-            ocrOption: {
-              ...ocrOption,
-            },
-            exportOption: {
-              ...exportOption,
-            },
-          });
           options.push({
             deviceName: device,
+            deviceSerial: sz,
             ...scanOption,
             ...imageOption,
             ...ocrOption,
@@ -1154,7 +1257,7 @@ class WebFxScanServer {
             apiItem,
             WebFxScanUtility.successResponse({
               message: "OK",
-              data: { options, groupOptions },
+              data: { options },
               apiItem,
             })
           );
@@ -1172,14 +1275,13 @@ class WebFxScanServer {
     }
   }
 
-  // Get available scanner property form webFXScan server
+  // API: Get available scanner property form webFXScan server
   async getDeviceCap(props) {
     const { deviceName } = props;
     const self = this;
 
     return self.notify("getDeviceCap", { "device-name": deviceName });
   }
-
   callbackGetDeviceCap(self, fixData) {
     const apiItem = this;
     try {
@@ -1360,6 +1462,105 @@ class WebFxScanServer {
           },
         ];
 
+        const paperSizeDetailMap = [
+          {
+            maxPapersizeX: 11.69,
+            maxPapersizeY: 16.54,
+            value: {
+              paperSize: "A3",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 8.27,
+            maxPapersizeY: 11.69,
+            value: {
+              paperSize: "A4",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 11.69,
+            maxPapersizeY: 8.27,
+            value: {
+              paperSize: "A4",
+              paperOrientation: "landscape",
+            },
+          },
+
+          {
+            maxPapersizeX: 5.8,
+            maxPapersizeY: 8.3,
+            value: {
+              paperSize: "A5",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 8.3,
+            maxPapersizeY: 5.8,
+            value: {
+              paperSize: "A5",
+              paperOrientation: "landscape",
+            },
+          },
+          {
+            maxPapersizeX: 4.1,
+            maxPapersizeY: 5.8,
+            value: {
+              paperSize: "A6",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 5.8,
+            maxPapersizeY: 4.1,
+            value: {
+              paperSize: "A6",
+              paperOrientation: "landscape",
+            },
+          },
+          {
+            maxPapersizeX: 8.5,
+            maxPapersizeY: 11,
+            value: {
+              paperSize: "Letter",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 6.9,
+            maxPapersizeY: 9.8,
+            value: {
+              paperSize: "B5",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 9.8,
+            maxPapersizeY: 6.9,
+            value: {
+              paperSize: "B5",
+              paperOrientation: "landscape",
+            },
+          },
+          {
+            maxPapersizeX: 4.9,
+            maxPapersizeY: 6.9,
+            value: {
+              paperSize: "B6",
+              paperOrientation: "portrait",
+            },
+          },
+          {
+            maxPapersizeX: 6.9,
+            maxPapersizeY: 4.9,
+            value: {
+              paperSize: "B6",
+              paperOrientation: "landscape",
+            },
+          },
+        ];
         // parser source
         const filterSource = sourceMap.filter((item) => {
           const { source: checkSource, duplex: checkDuplex } = item;
@@ -1377,6 +1578,47 @@ class WebFxScanServer {
             };
 
         // parser paperSize
+        const filterPaperSizeDetail = paperSizeDetailMap
+          .filter((item) => {
+            const { maxPapersizeX, maxPapersizeY } = item;
+            if (
+              max_papersize_x >= maxPapersizeX &&
+              max_papersize_y >= maxPapersizeY
+            ) {
+              return true;
+            } else {
+              return false;
+            }
+          })
+          .map((item) => {
+            return item.value;
+          });
+
+        const availablePaperSizeDetail = longpaper
+          ? {
+              value: [
+                {
+                  paperSize: "Auto",
+                },
+                ...filterPaperSizeDetail,
+                {
+                  paperSize: "LongPaper",
+                  paperOrientation: "portrait",
+                },
+              ],
+              type: "list",
+            }
+          : {
+              value: [
+                {
+                  paperSize: "Auto",
+                },
+                ...filterPaperSizeDetail,
+              ],
+              type: "list",
+            };
+
+        // parser paperSizeDetail
         const filterPaperSize = paperSizeMap
           .filter((item) => {
             const { maxPapersizeX, maxPapersizeY } = item;
@@ -1424,6 +1666,7 @@ class WebFxScanServer {
         const result = {
           source: availableSource,
           paperSize: availablePaperSize,
+          paperSizeDetail: availablePaperSizeDetail,
           resolution: availableResolution,
           mode: availableMode,
         };
@@ -1573,10 +1816,21 @@ class WebFxScanServer {
     }
   }
 
-  // cache autoScan's callback
+  // cache autoScan's callback (include callback of eventCode 7)
   async setAutoScanCallback(callback) {
     const self = this;
     self.cache.autoScanCallback = callback;
+    return Promise.resolve(
+      WebFxScanUtility.successResponse({
+        message: "OK",
+      })
+    );
+  }
+
+  // cache autoScan's callback (include callback of eventCode 7)
+  async setBeforeAutoScanCallback(callback) {
+    const self = this;
+    self.cache.beforeAutoScanCallback = callback;
     return Promise.resolve(
       WebFxScanUtility.successResponse({
         message: "OK",
@@ -1640,40 +1894,48 @@ class WebFxScanServer {
 
   // API: scan
   async scan(props) {
-    const { callback = null, timeout } = props;
+    const { callback = null, timeout, hideBase64 } = props;
     const self = this;
 
     if (typeof callback === "function") {
       self.cache.scanCallback = callback;
     }
 
-    return self.notify("scan", null, timeout);
+    return self.notify("scan", null, timeout, { hideBase64 });
   }
   callbackScan(self, fixData) {
     const apiItem = this;
     try {
       const { type, func, data } = fixData;
-      const { err_code = 0, message } = data;
+      const { event_code, err_code = 0, message } = data;
 
       // auto scan process
-      if (self.cache.isAutoScan && !self.apiList.scan.isActive) {
-        if (err_code !== 0) {
-          return;
-        }
-        if (func === "LIBWFX_NOTIFY_IMAGE_DONE") {
+      // work when no error and scan() is not active only
+      if (typeof self.cache.autoScanCallback === "function") {
+        if (
+          func === "LIBWFX_NOTIFY_IMAGE_DONE" &&
+          err_code === 0 &&
+          !apiItem.isActive
+        ) {
           const { name, base64, recognizedata, md5 = "" } = message;
           const { fullName, ext } = WebFxScanUtility.pathParser(name);
           const fixedBase64 = WebFxScanUtility.base64Parser(base64, ext);
-          // Execute autoScanCallback when get response
-          if (typeof self.cache.autoScanCallback === "function") {
-            self.cache.autoScanCallback({
-              fileName: fullName,
-              base64: fixedBase64,
-              ocrText: recognizedata,
-              md5,
-            });
-          }
+          self.devLog("[ScanLib] autoScanCallback trigger.");
+          self.cache.autoScanCallback({
+            fileName: fullName,
+            base64: fixedBase64,
+            ocrText: recognizedata,
+            md5,
+          });
         }
+      }
+
+      // break if scan() is not active
+      // it means that this response was passively obtained
+      if (!apiItem.isActive) {
+        self.devLog(
+          "[ScanLib] terminate callbackScan, as it was discovered to be a passive response."
+        );
         return;
       }
 
@@ -1688,6 +1950,12 @@ class WebFxScanServer {
             apiItem,
           })
         );
+      }
+
+      // reset api timeout if receive notify code 6
+      if (type === "callback" && func === "LIBWFX_EVENT_CODE") {
+        self.resetTimeout("scan");
+        return;
       }
 
       if (func === "LIBWFX_NOTIFY_END") {
@@ -1713,7 +1981,7 @@ class WebFxScanServer {
         self.cache.scanIndex = self.cache.scanIndex + 1;
         self.cache.tempScanData.push({
           fileName: fullName,
-          base64: fixedBase64,
+          base64: apiItem?.tmpParam?.hideBase64 ? "" : fixedBase64,
           ocrText: recognizedata,
           md5,
         });
@@ -2021,9 +2289,103 @@ class WebFxScanServer {
       );
     }
   }
+
+  // API: calibrate
+  calibrate() {
+    const self = this;
+    return self.notify("calibrate");
+  }
+  callbackCalibrate(self, fixData) {
+    const apiItem = this;
+    try {
+      const { type, func, data } = fixData;
+      const { err_code = 0, message = "" } = data;
+
+      if (err_code === 0) {
+        self.promiseResolve(
+          apiItem,
+          WebFxScanUtility.successResponse({ message: "OK", apiItem })
+        );
+      } else {
+        self.promiseReject(
+          apiItem,
+          WebFxScanUtility.failureResponse({
+            errCode: err_code,
+            message,
+            apiItem,
+          })
+        );
+      }
+    } catch (error) {
+      self.promiseReject(
+        apiItem,
+        WebFxScanUtility.failureResponse({
+          errCode: 9999,
+          message: error,
+          apiItem,
+        })
+      );
+    }
+  }
+
+  setSocketMsgCollector(props) {
+    const self = this;
+    const { callback } = props;
+    self.cache.socketMsgCollector = callback;
+    return Promise.resolve(
+      WebFxScanUtility.successResponse({
+        message: "OK",
+      })
+    );
+  }
+
+  // API: ejectPaper
+  ejectPaper(props) {
+    const self = this;
+    const { isBackward } = props;
+    const data = {
+      "backward-eject": isBackward,
+    };
+    return self.notify("ejectPaper", data);
+  }
+
+  callbackEjectPaper(self, fixData) {
+    const apiItem = this;
+    try {
+      const { type, func, data } = fixData;
+      const { err_code = 0, message = "" } = data;
+
+      if (err_code === 0) {
+        self.promiseResolve(
+          apiItem,
+          WebFxScanUtility.successResponse({ message: "OK", apiItem })
+        );
+      } else {
+        self.promiseReject(
+          apiItem,
+          WebFxScanUtility.failureResponse({
+            errCode: err_code,
+            message,
+            apiItem,
+          })
+        );
+      }
+    } catch (error) {
+      self.promiseReject(
+        apiItem,
+        WebFxScanUtility.failureResponse({
+          errCode: 9999,
+          message: error,
+          apiItem,
+        })
+      );
+    }
+  }
 }
 
-/* LIB Interface */
+// *********************
+// *** LIB Interface ***
+// *********************
 class WebFxScan {
   constructor(props) {
     const validatedProps =
@@ -2108,9 +2470,20 @@ class WebFxScan {
     return this.serverInstance.setAutoScanCallback(callback);
   }
 
+  setBeforeAutoScanCallback(props) {
+    const { callback = () => {} } = props;
+    if (typeof callback !== "function") {
+      WebFxScanUtility.throwError({
+        errCode: 9010,
+        message: "callback is not function. It require function type.",
+      });
+    }
+    return this.serverInstance.setBeforeAutoScanCallback(callback);
+  }
+
   scan(props = {}) {
-    const { callback = null, timeout = null } = props;
-    return this.serverInstance.scan({ callback, timeout });
+    const { callback = null, timeout = null, hideBase64 = false } = props;
+    return this.serverInstance.scan({ callback, timeout, hideBase64 });
   }
 
   convert(props) {
@@ -2140,6 +2513,32 @@ class WebFxScan {
 
   getVersion() {
     return this.serverInstance.version;
+  }
+
+  calibrate() {
+    return this.serverInstance.calibrate();
+  }
+
+  setSocketMsgCollector(props) {
+    const { callback = () => {} } = props;
+    if (typeof callback !== "function") {
+      WebFxScanUtility.throwError({
+        errCode: 9010,
+        message: "callback is not function. It require function type.",
+      });
+    }
+    return this.serverInstance.setSocketMsgCollector({ callback });
+  }
+
+  ejectPaper(props) {
+    const { isBackward = false } = props;
+    if (typeof isBackward !== "boolean") {
+      WebFxScanUtility.throwError({
+        errCode: 9010,
+        message: "isBackward is not boolean. It require boolean type.",
+      });
+    }
+    return this.serverInstance.ejectPaper({ isBackward });
   }
 }
 
