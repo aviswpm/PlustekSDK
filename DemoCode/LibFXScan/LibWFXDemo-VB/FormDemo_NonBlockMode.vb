@@ -105,12 +105,6 @@ Public Class FormDemo_NonBlockMode
             End If
         ElseIf enNotifyCode = ENUM_LIBWFX_NOTIFY_CODE.LIBWFX_NOTIFY_END Then
             form.WriteLog("Status:[Scan End]")
-            If ((m_command.IndexOf("""device-name"":""776U""") <> -1 Or m_command.IndexOf("""device-name"":""777U""") <> -1 Or m_command.IndexOf("""device-name"":""778U""") <> -1) And m_command.IndexOf("""backward-eject"":true") <> -1) Then
-                form.HandleEjectPaper(ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING)
-            End If
-            If ((m_command.IndexOf("""device-name"":""776U""") <> -1 Or m_command.IndexOf("""device-name"":""777U""") <> -1 Or m_command.IndexOf("""device-name"":""778U""") <> -1) And m_command.IndexOf("""backward-eject"":false") <> -1) Then
-                form.HandleEjectPaper(ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING)
-            End If
 #If DoResetIfExcept = 1 Then
             If form.m_bIPexception = True Then
                 form.HandleSetProperty()
@@ -198,6 +192,10 @@ Public Class FormDemo_NonBlockMode
     End Sub
 
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If m_DeviceWrapper.hLibModule = IntPtr.Zero Or m_DeviceWrapper.hCommandModule = IntPtr.Zero Then
+            Me.Close()
+            Return
+        End If
         Dim enRet As ENUM_LIBWFX_ERRCODE
 
         REM Init LibWFXScan Variable
@@ -246,6 +244,9 @@ Public Class FormDemo_NonBlockMode
 
     Private Sub MainForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
         REM Release LibWFXScan Resource
+        If m_DeviceWrapper.hLibModule = IntPtr.Zero Or m_DeviceWrapper.hCommandModule = IntPtr.Zero Then
+            Return
+        End If
         m_DeviceWrapper.m_pfnLibWFX_CloseDevice()
         m_DeviceWrapper.m_pfnLibWFX_DeInit()
     End Sub

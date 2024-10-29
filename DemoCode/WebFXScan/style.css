@@ -305,7 +305,7 @@ body {
 }
 
 #current-page-input {
-  width: 30px;
+  width: 50px;
 }
 
 #current-page-input::-webkit-outer-spin-button,

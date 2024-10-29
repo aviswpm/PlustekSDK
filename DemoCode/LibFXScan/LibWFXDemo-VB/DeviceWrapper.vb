@@ -6,8 +6,8 @@ Imports System.Reflection
 
 Public Class DeviceWrapper
     Implements IDisposable
-    Dim hLibModule As IntPtr
-    Dim hCommandModule As IntPtr
+    Public hLibModule As IntPtr
+    Public hCommandModule As IntPtr
     Public Const LIBWFX_DLLNAME As String = "LibWebFXScan.dll"
     Public Const COMMANDEDITOR_DLLNAME As String = "CommandEditor.dll"
 
@@ -159,53 +159,53 @@ Public Class DeviceWrapper
     Public Shared Function FreeLibrary(ByVal hLibModule As IntPtr) As Boolean
     End Function
 
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_Init() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_InitEx(ByVal enInitMode As ENUM_LIBWFX_INIT_MODE) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_DeInit() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_GetDeviesList(ByRef szDevicesListOut As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_GetDeviesListWithSerial(ByRef szDevicesListOut As IntPtr, ByRef szSerialListOut As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_SetProperty(ByVal szRequestCmdIn As String, ByVal pfnLibWFXEVENTCBIn As LIBWFXEVENTCB, pUserDefIn As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_StartScan(ByVal pfnLibWFXCBIn As LIBWFXCB, pUserDefIn As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_SynchronizeScan(ByVal szRequestCmdIn As String, ByRef pScanImageList As IntPtr, ByRef pOCRResultList As IntPtr, ByRef pExceptionRet As IntPtr, ByRef pEventRet As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_Calibrate() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_ECOControl(ByRef pulTime As UInteger, ByVal nSetIn As Integer) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_PaperReady() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_CloseDevice() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_EjectPaperControl(ByVal enEjectDirectIn As ENUM_LIBWFX_EJECT_DIRECTION) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_EjectPaperControlWithMsg(ByVal enEjectDirectIn As ENUM_LIBWFX_EJECT_DIRECTION, ByRef szErrorMsg As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_GetPaperStatus(ByRef penStatusOut As ENUM_LIBWFX_EVENT_CODE) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_MergeToPdf(ByVal szFileListIn As String) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_IsWindowExist(ByVal szWindowNameIn As String) As Boolean
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_GetLastErrorCode(ByVal enErrorCode As ENUM_LIBWFX_ERRCODE, ByRef szErrorMsg As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Sub EditCommand(ByVal szCommand As String, ByRef pCommandOut As IntPtr)
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_GetCertificatePermission(ByRef szPermissionTypeList As IntPtr, ByVal enDataType As ENUM_PERMISSION_DATA_TYPE) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_RecycleSaveFolder() As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_AsynchronizeReadImage(ByVal szFilePathIn As String, ByVal pfnLibWFXCBIn As LIBWFXCB, pUserDefIn As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_SynchronizeReadImage(ByVal szRequestCmdIn As String, ByVal szFilePathIn As String, ByRef szScanImageList As IntPtr, ByRef szOCRResultList As IntPtr, ByRef szExceptionRet As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.Cdecl, CharSet:=CharSet.Unicode)>
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_WriteAPLog(ByVal szMsg As String) As ENUM_LIBWFX_ERRCODE
 
     Public m_pfnLibWFX_Init As LibWFX_Init
@@ -239,7 +239,6 @@ Public Class DeviceWrapper
     End Function
 
     Public Sub New()
-
         Dim szPath As String = Assembly.GetExecutingAssembly().Location.ToString()
         szPath = szPath.Substring(0, szPath.LastIndexOf("\"))
         Dim szLibDLLPath As String = szPath + "\" + LIBWFX_DLLNAME
@@ -253,13 +252,15 @@ Public Class DeviceWrapper
         hLibModule = LoadLibrary(szLibDLLPath)
         hCommandModule = LoadLibrary(szCommandDLLPath)
 
-        If hLibModule = IntPtr.Zero Or hCommandModule = IntPtr.Zero Then
+		If hLibModule = IntPtr.Zero Or hCommandModule = IntPtr.Zero Then
             Dim keyName As String
-#If WIN32 Then
-        keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
-#Else
-            keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
-#End If
+
+            If Environment.Is64BitOperatingSystem And Environment.Is64BitProcess = False Then
+                keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
+            Else
+                keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
+            End If
+
             Dim value As Object = Registry.GetValue(keyName, "InstallLocation", "")
 
             If value IsNot Nothing Then
@@ -337,7 +338,7 @@ Public Class DeviceWrapper
             m_pfnLibWFX_SynchronizeScan = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(LibWFX_SynchronizeScan)), LibWFX_SynchronizeScan)
 
             pFun = GetProcAddress(hCommandModule, "EditCommand")
-            Dim m_pfnLibWFX_EditCommand As EditCommand = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(EditCommand)), EditCommand)
+            m_pfnLibWFX_EditCommand = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(EditCommand)), EditCommand)
 
             pFun = GetProcAddress(hLibModule, "LibWFX_GetCertificatePermission")
             m_pfnLibWFX_GetCertificatePermission = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(LibWFX_GetCertificatePermission)), LibWFX_GetCertificatePermission)
@@ -349,8 +350,7 @@ Public Class DeviceWrapper
             m_pfnLibWFX_WriteAPLog = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(LibWFX_WriteAPLog)), LibWFX_WriteAPLog)
 
         Else
-            Console.WriteLine("Load library fail!")
-
+            MessageBox.Show("Library loading failed. Please ensure that the SDK installation package is correctly installed!", "Warning")
         End If
     End Sub
 

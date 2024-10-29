@@ -56,7 +56,7 @@ private:
 	BOOL InitLib(VOID);
 	BOOL InitDevicesList(VOID);
 	BOOL WriteLog(TCHAR* szMsg);
-	BOOL ShowImage();
+	BOOL ShowImage(int controlID, std::wstring filepath);
 	BOOL GetJsonString(CString szDevName);
 	BOOL GetCommandString(wchar_t* DevName);
 	BOOL SetCommandString(wchar_t* DevName, CString Command);

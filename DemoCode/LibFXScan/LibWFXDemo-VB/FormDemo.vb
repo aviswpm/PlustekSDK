@@ -14,11 +14,12 @@ Public Class FormDemo
         Else
             Dim keyName As String
             Dim sdkPath As String
-#If WIN32 Then
-        keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
-#Else
-            keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
-#End If
+            If Environment.Is64BitOperatingSystem And Environment.Is64BitProcess = False Then
+                keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
+            Else
+                keyName = "HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"
+            End If
+
             Dim value As Object = Registry.GetValue(keyName, "InstallLocation", "")
 
             If value IsNot Nothing Then

@@ -33,21 +33,25 @@ namespace LibWFXDemo_CSharp
             }
             else
             {
-#if WIN32
-                szFilePath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
-#else
-                szFilePath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
-#endif
-                System.IO.Directory.SetCurrentDirectory(szFilePath);
+                if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+                    szFilePath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
+                else
+                    szFilePath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
 
-                if (szFilePath.LastIndexOf('\\') != (szFilePath.Length - 1))
-                    szFilePath += "\\";
 
-                szFilePath += "LibWebFxScan.ini";
+                if (Directory.Exists(szFilePath))
+                {                  
+                    System.IO.Directory.SetCurrentDirectory(szFilePath);
 
-                if (File.Exists(szFilePath))
-                {
-                    UseModeBlock = GetPrivateProfileInt("Style", "UseModeBlock", 1, szFilePath);
+                    if (szFilePath.LastIndexOf('\\') != (szFilePath.Length - 1))
+                        szFilePath += "\\";
+
+                    szFilePath += "LibWebFxScan.ini";
+
+                    if (File.Exists(szFilePath))
+                    {
+                        UseModeBlock = GetPrivateProfileInt("Style", "UseModeBlock", 1, szFilePath);
+                    }
                 }
             }
 

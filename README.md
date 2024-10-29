@@ -10,6 +10,7 @@ The Plustek SDK is offered in two variations:
     enables developers to create web applications that can utilize scanning capabilities of Plustek scanners.
 
 For advanced services or tailored solutions, paid consultations are available, please visit [Plustek].
+If further technical support is required, a technical support fee of USD$300/day will be charged.
 
 ### Installation
  
@@ -41,6 +42,7 @@ Plustek SDK está disponible en dos versiones:
 - SDK basado en web (En lo sucesivo referido "WebFXScan" o "SDK web"): permite a los desarrolladores crear aplicaciones web (javascript) que puedan utilizar funciones de escaneo de los escáneres Plustek. 
 
 Para servicios avanzados o soluciones personalizadas, hay consultas pagas disponibles, visite [Plustek](https://plustek.com/lam/solutions/sdk.php)
+Si desea el soporte técnico adicional, hay cobro por la tarifa de soporte técnico por USD$300/día
 
 ### Instalación 
 - Nota importante: 
@@ -71,6 +73,7 @@ Plustek SDK 提供兩種版本：
     使開發人員能夠建立可利用Plustek 掃描器的掃描功能的網路應用程式。
 
 如需更多服務或客製化解決方案，可提供付費諮詢服務，詳細請至 [Plustek 官方網站]。
+若需進一步技術支援，需酌收技術支援費用 USD$300/天
   
 ### 安裝
 - 重要的提示：

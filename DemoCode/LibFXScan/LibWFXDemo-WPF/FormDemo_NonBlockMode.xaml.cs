@@ -148,12 +148,6 @@ namespace LibWFXDemo_CSharp
             else if (enNotifyCode == ENUM_LIBWFX_NOTIFY_CODE.LIBWFX_NOTIFY_END)
             {
                 form.DispatcherWriteLog("Status:[Scan End]");
-
-                if ((form.m_command.IndexOf("\"device-name\":\"776U\"") != -1 || form.m_command.IndexOf("\"device-name\":\"777U\"") != -1 || form.m_command.IndexOf("\"device-name\":\"778U\"") != -1) && form.m_command.IndexOf("\"backward-eject\":true") != -1)
-                    form.HandleEjectPaper(ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING);
-
-                if ((form.m_command.IndexOf("\"device-name\":\"776U\"") != -1 || form.m_command.IndexOf("\"device-name\":\"777U\"") != -1 || form.m_command.IndexOf("\"device-name\":\"778U\"") != -1) && form.m_command.IndexOf("\"backward-eject\":false") != -1)
-                    form.HandleEjectPaper(ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING);
 #if DoResetIfExcept
                 if (form.m_bIPexception)
 		        {
@@ -292,6 +286,9 @@ namespace LibWFXDemo_CSharp
 
         private void FormMain_Load(object sender, RoutedEventArgs e)
         {
+            if (m_DeviceWrapper.hLibModule == IntPtr.Zero || m_DeviceWrapper.hCommandModule == IntPtr.Zero)
+                Environment.Exit(0);
+
             if (m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") == true)
             {
 
@@ -343,8 +340,14 @@ namespace LibWFXDemo_CSharp
         public static extern bool FreeLibrary(IntPtr hModule);
         private void FormDemo_FormClosing(object sender, CancelEventArgs e)
         {
-            m_DeviceWrapper.m_pfnLibWFX_CloseDevice();
-            m_DeviceWrapper.m_pfnLibWFX_DeInit();
+            if (m_DeviceWrapper.hLibModule != IntPtr.Zero)
+            {
+                m_DeviceWrapper.m_pfnLibWFX_CloseDevice();
+                m_DeviceWrapper.m_pfnLibWFX_DeInit();
+                FreeLibrary(m_DeviceWrapper.hLibModule);
+            }
+            if (m_DeviceWrapper.hCommandModule != IntPtr.Zero)
+                FreeLibrary(m_DeviceWrapper.hCommandModule);
             Environment.Exit(0);
         }
 

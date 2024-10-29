@@ -81,7 +81,8 @@ BOOL CLibWFXDemoDlg_BlockMode::InitLib(VOID)
 
 	if (m_hLibWFX == NULL)
 	{
-		WriteLog(_T("Status:[Load LibWebFXScan Fail]"));
+		::MessageBoxW(NULL, L"Library loading failed. Please ensure that the SDK installation package is correctly installed!", L"Warning", MB_OK | MB_ICONEXCLAMATION);
+		SendMessage(WM_CLOSE, NULL, NULL);
 		return FALSE;
 	}
 
@@ -275,31 +276,25 @@ BOOL CLibWFXDemoDlg_BlockMode::WriteLog(TCHAR* szMsg)
 	return TRUE;
 }
 
-BOOL CLibWFXDemoDlg_BlockMode::ShowImage()
+BOOL CLibWFXDemoDlg_BlockMode::ShowImage(int controlID, std::wstring filepath)
 {
 	m_muxMap.lock();
 	CRect rcImage;
-	static_cast<CStatic *>(GetDlgItem((m_nCount % 2) ? IDC_STATIC_IMG_2 : IDC_STATIC_IMG_1))->GetClientRect(&rcImage);
+	static_cast<CStatic *>(GetDlgItem(controlID))->GetClientRect(&rcImage);
 
 	CImage Image;
-	HRESULT hRlt = NULL;
-
-	USES_CONVERSION;	
-	if (vecImagePath.size() > 0) 
-	{
-		const std::wstring tmp = vecImagePath.at(0);
-		hRlt = Image.Load(tmp.c_str());
-		vecImagePath.erase(vecImagePath.begin());
-	}
-	else
-	{
-		return 0;
-	}
+	HRESULT hRlt = Image.Load(filepath.c_str());
 
 	if (hRlt != S_OK)
+	{
+		vecImagePath.erase(vecImagePath.begin());
 		return FALSE;
+	}
 	if ((Image.GetWidth() == 0) || (Image.GetHeight() == 0))
+	{
+		vecImagePath.erase(vecImagePath.begin());
 		return FALSE;
+	}
 
 	int nRatioWidth = rcImage.Height() * Image.GetWidth() / Image.GetHeight();
 	int nHRatioHeight = rcImage.Width() * Image.GetHeight() / Image.GetWidth();
@@ -316,7 +311,7 @@ BOOL CLibWFXDemoDlg_BlockMode::ShowImage()
 		rcImage.bottom = rcImage.top + nHRatioHeight;
 	}
 
-	CDC* pDC = GetDlgItem((m_nCount++ % 2) ? IDC_STATIC_IMG_2 : IDC_STATIC_IMG_1)->GetWindowDC();
+	CDC* pDC = GetDlgItem(controlID)->GetWindowDC();
 	pDC->SetStretchBltMode(COLORONCOLOR);
 
 	rcImage.left += 5;
@@ -636,19 +631,14 @@ BOOL CLibWFXDemoDlg_BlockMode::SetCommandString(wchar_t* DevName, CString Comman
 	return false;
 }
 
-wchar_t* CLibWFXDemoDlg_BlockMode::rtrim(wchar_t *str)
-{
-	if (str == NULL || *str == '\0' || wcscmp(str, L" ") == 0)
-	{
-		return str;
+wchar_t* CLibWFXDemoDlg_BlockMode::rtrim(wchar_t* str) {
+	wchar_t* end;
+	end = str + wcslen(str) - 1;
+
+	while (end >= str && iswspace(*end)) {
+		end--;
 	}
-	int len = wcslen(str);
-	wchar_t *p = str + len - 1;
-	while (isspace(*p) && p >= str)
-	{
-		*p = '\0';
-		--p;
-	}
+	*(end + 1) = L'\0';
 	return str;
 }
 
@@ -1093,18 +1083,30 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 		wchar_t* token = wcstok_s((wchar_t*)szScanImageList, delim, &next_token);
 		wchar_t* token2 = wcstok_s((wchar_t*)szOCRResultList, delim, &next_token2);
 
-		while (token)
+		if (szCommand.Find(_T("\"rawdata\":true")) != -1)
 		{
-			WriteLog(rtrim(token)); //get each image path			
-			WriteLog(rtrim(token2)); //get each ocr result	
-
-			if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+			while (token2)
 			{
-				vecImagePath.push_back(rtrim(token));
-				SetTimer(vecImagePath.size(), 1, NULL);
+				if (wcscmp((wchar_t *)rtrim(token2), L""))
+					WriteLog(rtrim(token2)); //get each ocr result
+				token2 = wcstok_s(NULL, delim, &next_token2);
 			}
-			token = wcstok_s(NULL, delim, &next_token);
-			token2 = wcstok_s(NULL, delim, &next_token2);
+		}
+		else
+		{
+			while (token)
+			{
+				WriteLog(rtrim(token)); //get each image path
+				WriteLog(rtrim(token2)); //get each ocr result
+
+				if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+				{
+					vecImagePath.push_back(rtrim(token));
+					SetTimer(vecImagePath.size(), 1, NULL);
+				}
+				token = wcstok_s(NULL, delim, &next_token);
+				token2 = wcstok_s(NULL, delim, &next_token2);
+			}
 		}
 	}
 	else
@@ -1129,18 +1131,30 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 		wchar_t* token = wcstok_s((wchar_t *)szScanImageList, delim, &next_token);
 		wchar_t* token2 = wcstok_s((wchar_t *)szOCRResultList, delim, &next_token2);
 
-		while (token)
+		if (szCommand.Find(_T("\"rawdata\":true")) != -1)
 		{
-			WriteLog(rtrim(token)); //get each image path
-			WriteLog(rtrim(token2)); //get each ocr result
-
-			if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+			while (token2)
 			{
-				vecImagePath.push_back(rtrim(token));
-				SetTimer(vecImagePath.size(), 1, NULL);
+				if (wcscmp((wchar_t *)rtrim(token2), L""))
+					WriteLog(rtrim(token2)); //get each ocr result
+				token2 = wcstok_s(NULL, delim, &next_token2);
 			}
-			token = wcstok_s(NULL, delim, &next_token);
-			token2 = wcstok_s(NULL, delim, &next_token2);
+		}
+		else
+		{
+			while (token)
+			{
+				WriteLog(rtrim(token)); //get each image path
+				WriteLog(rtrim(token2)); //get each ocr result
+
+				if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+				{
+					vecImagePath.push_back(rtrim(token));
+					SetTimer(vecImagePath.size(), 1, NULL);
+				}
+				token = wcstok_s(NULL, delim, &next_token);
+				token2 = wcstok_s(NULL, delim, &next_token2);
+			}
 		}
 	}
 	WriteLog(_T("Status:[Scan End]"));
@@ -1168,9 +1182,21 @@ void CLibWFXDemoDlg_BlockMode::ShowScanningDlg(bool enableDlg)
 void CLibWFXDemoDlg_BlockMode::OnTimer(UINT_PTR nIDEvent)
 {
 	// TODO: Add your message handler code here and/or call default
-	KillTimer(vecImagePath.size());
-	ShowImage();
-	CDialogEx::OnTimer(nIDEvent);
+	KillTimer(nIDEvent);
+	int currentControlId = (m_nCount % 2) ? IDC_STATIC_IMG_2 : IDC_STATIC_IMG_1;
+	int currentControlId_backup = (currentControlId == IDC_STATIC_IMG_2) ? IDC_STATIC_IMG_1 : IDC_STATIC_IMG_2;
+
+	if (vecImagePath.size() > 1)
+	{
+		ShowImage(currentControlId_backup, vecImagePath.at(0));
+		ShowImage(currentControlId, vecImagePath.at(1));
+		vecImagePath.erase(vecImagePath.begin());
+	}
+	else if (vecImagePath.size() == 1)
+	{
+		ShowImage(currentControlId, vecImagePath.at(0));
+	}
+	m_nCount++;
 }
 
 
@@ -1241,40 +1267,21 @@ BOOL CLibWFXDemoDlg_BlockMode::GetSDKInstallPath(TCHAR* szSDKInstallPath)
 	HKEY  key = NULL;
 	TCHAR szRegPath[MAX_PATH] = { 0 };
 
-	for (int iRegType = 0; iRegType<REG_TYPE_COUNT; iRegType++)
+#if ((defined(__i386__) || defined(_M_IX86)) && defined(_WIN64))  //OS:X64  EXE:X86
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#else
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#endif
+
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
 	{
-		switch (iRegType)
-		{
-		case REG_TYPE_W64NODE32:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		case REG_TYPE_COMMON:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		default:
-			break;
-		}
-
-		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
-		{
-			continue;
-		}
-
 		if (key)
 		{
 			DWORD type, size;
 			size = MAX_PATH;
-			if (!RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
-				continue;
-			else {
+			if (RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
 				return TRUE;
-			}
-		}
-		else
-		{
-			continue;
 		}
 	}
-
 	return FALSE;
 }

@@ -59,6 +59,9 @@ namespace LibWFXDemo_CSharp
 
         private void FormMain_Load(object sender, RoutedEventArgs e)
         {
+            if (m_DeviceWrapper.hLibModule == IntPtr.Zero || m_DeviceWrapper.hCommandModule == IntPtr.Zero)
+                Environment.Exit(0);
+
             if (m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") == true)
             {
 
@@ -108,12 +111,13 @@ namespace LibWFXDemo_CSharp
         [DllImport("kernel32.dll")]
         public static extern bool FreeLibrary(IntPtr hModule);
         private void FormDemo_FormClosing(object sender, CancelEventArgs e)
-        {
-            m_DeviceWrapper.m_pfnLibWFX_CloseDevice();
-            m_DeviceWrapper.m_pfnLibWFX_DeInit();
-
+        {                      
             if (m_DeviceWrapper.hLibModule != IntPtr.Zero)
+            {
+                m_DeviceWrapper.m_pfnLibWFX_CloseDevice();
+                m_DeviceWrapper.m_pfnLibWFX_DeInit();
                 FreeLibrary(m_DeviceWrapper.hLibModule);
+            }
 
             if (m_DeviceWrapper.hCommandModule != IntPtr.Zero)
                 FreeLibrary(m_DeviceWrapper.hCommandModule);

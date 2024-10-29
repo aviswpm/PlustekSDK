@@ -221,15 +221,7 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 		CString szCommand;
 		(pLibWFXDemoDlg->GetDlgItem(IDC_COMBO_COMMAND))->GetWindowText(szCommand);
 		//pLibWFXDemoDlg->WriteLog(_T("Status:[Scan End]"));
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("Status:[Scan End]"), NULL);
-		if ((szCommand.Find(_T("\"device-name\":\"776U\"")) != -1 || szCommand.Find(_T("\"device-name\":\"777U\"")) != -1 || szCommand.Find(_T("\"device-name\":\"778U\"")) != -1) && szCommand.Find(_T("\"backward-eject\":true")) != -1)
-		{
-			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_EJECTPAPER, (WPARAM)LIBWFX_EJECT_BACKWARDING, NULL);
-		}
-		if ((szCommand.Find(_T("\"device-name\":\"776U\"")) != -1 || szCommand.Find(_T("\"device-name\":\"777U\"")) != -1 || szCommand.Find(_T("\"device-name\":\"778U\"")) != -1) && szCommand.Find(_T("\"backward-eject\":false")) != -1)
-		{
-			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_EJECTPAPER, (WPARAM)LIBWFX_EJECT_FORWARDING, NULL);
-		}
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("Status:[Scan End]"), NULL);		
 #if DoResetIfExcept
 		if (pLibWFXDemoDlg->m_bIPexception)
 		{
@@ -280,8 +272,9 @@ BOOL CLibWFXDemoDlg_NonBlockMode::InitLib(VOID)
 	}
 
 	if (m_hLibWFX == NULL)
-	{
-		WriteLog(_T("Status:[Load LibWebFXScan Fail]"));
+	{	
+		::MessageBoxW(NULL, L"Library loading failed. Please ensure that the SDK installation package is correctly installed!", L"Warning", MB_OK | MB_ICONEXCLAMATION);
+		SendMessage(WM_CLOSE, NULL, NULL);
 		return FALSE;
 	}
 
@@ -1542,41 +1535,21 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetSDKInstallPath(TCHAR* szSDKInstallPath)
 {
 	HKEY  key = NULL;
 	TCHAR szRegPath[MAX_PATH] = { 0 };
+#if ((defined(__i386__) || defined(_M_IX86)) && defined(_WIN64))  //OS:X64  EXE:X86
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#else
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#endif
 
-	for (int iRegType = 0; iRegType<REG_TYPE_COUNT; iRegType++)
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
 	{
-		switch (iRegType)
-		{
-		case REG_TYPE_W64NODE32:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		case REG_TYPE_COMMON:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		default:
-			break;
-		}
-
-		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
-		{
-			continue;
-		}
-
 		if (key)
 		{
 			DWORD type, size;
 			size = MAX_PATH;
-			if (!RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
-				continue;
-			else {
+			if (RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
 				return TRUE;
-			}
-		}
-		else
-		{
-			continue;
 		}
 	}
-
 	return FALSE;
 }

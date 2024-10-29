@@ -166,6 +166,7 @@ BOOL CLibWFXDemoApp::InitInstance()
 			//{
 			//	::PostMessage(hWnd, WM_CLOSE, NULL, NULL);
 			//}
+			::MessageBox(NULL, _T("LibWFXDemo has been opened!"), _T("Warning"), MB_YESNO);
 			return FALSE;
 		}
 		else if (bQuit)
@@ -265,42 +266,22 @@ BOOL CLibWFXDemoApp::GetSDKInstallPath(TCHAR* szSDKInstallPath)
 {
 	HKEY  key = NULL;
 	TCHAR szRegPath[MAX_PATH] = { 0 };
+#if ((defined(__i386__) || defined(_M_IX86)) && defined(_WIN64))  //OS:X64  EXE:X86
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#else
+	_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
+#endif
 
-	for (int iRegType = 0; iRegType<REG_TYPE_COUNT; iRegType++)
+	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
 	{
-		switch (iRegType)
-		{
-		case REG_TYPE_W64NODE32:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		case REG_TYPE_COMMON:
-			_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-			break;
-		default:
-			break;
-		}
-
-		if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) != ERROR_SUCCESS)
-		{
-			continue;
-		}
-
 		if (key)
 		{
 			DWORD type, size;
 			size = MAX_PATH;
-			if (!RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
-				continue;
-			else {
+			if (RegQueryValueEx(key, _T("InstallLocation"), NULL, &type, (LPBYTE)szSDKInstallPath, &size) == ERROR_SUCCESS)
 				return TRUE;
-			}
-		}
-		else
-		{
-			continue;
 		}
 	}
-
 	return FALSE;
 }
 

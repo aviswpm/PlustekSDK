@@ -3,6 +3,7 @@ using System.Text;
 using System.IO;
 using System.Runtime.InteropServices;
 using Microsoft.Win32;
+using System.Windows;
 
 public enum ENUM_LIBWFX_ERRCODE
 {
@@ -242,31 +243,35 @@ class DeviceWrapper
     {
         string szPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
         szPath = szPath.Substring(0, szPath.LastIndexOf('\\'));
-        string szLibDLLPath = szPath + LIBWFX_DLLNAME;
-        string szCommandDLLPath = szPath + COMMANDEDITOR_DLLNAME;
+        string szLibDLLPath = szPath + "\\" + LIBWFX_DLLNAME;
+        string szCommandDLLPath = szPath + "\\" + COMMANDEDITOR_DLLNAME;
         hLibModule = LoadLibrary(szLibDLLPath);
         hCommandModule = LoadLibrary(szCommandDLLPath);
         if (hLibModule == IntPtr.Zero || hCommandModule == IntPtr.Zero)
         {
             //find sdk install path
-#if WIN32
-            szPath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
-#else
-            szPath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
-#endif
-            System.IO.Directory.SetCurrentDirectory(szPath);
+            if (Environment.Is64BitOperatingSystem && !Environment.Is64BitProcess)
+                szPath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
+            else
+                szPath = (string)Registry.GetValue("HKEY_LOCAL_MACHINE\\SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1", "InstallLocation", "");
 
-            if (szPath.LastIndexOf('\\') != (szPath.Length - 1))
-                szPath += "\\";
 
-            szLibDLLPath = szPath + LIBWFX_DLLNAME;
-            szCommandDLLPath = szPath + COMMANDEDITOR_DLLNAME;
+            if (Directory.Exists(szPath))
+            {
+                System.IO.Directory.SetCurrentDirectory(szPath);
 
-            if (hLibModule == IntPtr.Zero)
-                hLibModule = LoadLibrary(szLibDLLPath);
+                if (szPath.LastIndexOf('\\') != (szPath.Length - 1))
+                    szPath += "\\";
 
-            if (hCommandModule == IntPtr.Zero)
-                hCommandModule = LoadLibrary(szCommandDLLPath);
+                szLibDLLPath = szPath + LIBWFX_DLLNAME;
+                szCommandDLLPath = szPath + COMMANDEDITOR_DLLNAME;
+
+                if (hLibModule == IntPtr.Zero)
+                    hLibModule = LoadLibrary(szLibDLLPath);
+
+                if (hCommandModule == IntPtr.Zero)
+                    hCommandModule = LoadLibrary(szCommandDLLPath);
+            }  
         }
         if (hLibModule != IntPtr.Zero && hCommandModule != IntPtr.Zero)
         {
@@ -335,7 +340,10 @@ class DeviceWrapper
 
             pFun = GetProcAddress(hLibModule, "LibWFX_WriteAPLog");
             m_pfnLibWFX_WriteAPLog = (LibWFX_WriteAPLog)Marshal.GetDelegateForFunctionPointer(pFun, typeof(LibWFX_WriteAPLog));
-        }       
-    }   
+        }
+        else
+            MessageBox.Show("Library loading failed. Please ensure that the SDK installation package is correctly installed!", "Warning");
+
+    }
 }
 

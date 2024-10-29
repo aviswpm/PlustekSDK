@@ -282,8 +282,6 @@ $(document).ready(function () {
       // message record template
       const logTitle = log.substring(0, 100);
       const isSendType = msgType === "up";
-      const fixedLogObj = sdkV2MessageParser(log);
-      const isRecognizeDataExist = fixedLogObj?.data?.message?.recognizedata;
       const accordionItem = `
       <div class="accordion-item">
         <h2 class="accordion-header" id="heading${logId}">
@@ -292,9 +290,7 @@ $(document).ready(function () {
               isSendType
                 ? "custom-message-up-bg-color"
                 : "custom-message-down-bg-color"
-            } custom-accordion-button p-1 ps-2 ${
-        isRecognizeDataExist ? "justify-content-between" : ""
-      }"
+            } custom-accordion-button p-1 ps-2"
             type="button"
             data-id="${logId}"
           >
@@ -306,11 +302,6 @@ $(document).ready(function () {
             <div class="custom-text-line-2 custom-font-size-mid">
               ${logTitle}
             </div>
-            ${
-              isRecognizeDataExist
-                ? `<button type="button" class="recognize-btn custom-font-size-mid ms-1 btn btn-primary" data-id="${logId}">recognize</button>`
-                : ""
-            }
           </div>
         </h2>
       </div>`;
@@ -468,38 +459,6 @@ $(document).ready(function () {
     const finalScannerConfig =
       recognizeType === "" ? otherParam : globalParam.scannerConfig;
     await MyScan.setScanner(finalScannerConfig);
-  }
-
-  // The return format of WebFXScan includes nested JSON strings. Here, traversal through layers for conversion is required.
-  function sdkV2MessageParser(jsonStr) {
-    const nonEscapeJsonStr = jsonStr.replace(/\\r\\n/g, "");
-
-    try {
-      let obj = JSON.parse(nonEscapeJsonStr);
-      return traverseObject(obj);
-    } catch (error) {
-      console.warn("sdkV2MessageParser error:", error);
-    }
-
-    function traverseObject(obj) {
-      let result = obj;
-      for (let key in result) {
-        if (typeof result[key] === "string") {
-          try {
-            const tempVar = JSON.parse(result[key]);
-            result[key] = tempVar;
-            if (typeof tempVar === "object") traverseObject(tempVar);
-          } catch (error) {
-            // skip
-          }
-        } else if (typeof result[key] === "object") {
-          traverseObject(result[key]);
-        } else {
-          // ingore other type
-        }
-      }
-      return result;
-    }
   }
 
   // wrap lib to histroy log

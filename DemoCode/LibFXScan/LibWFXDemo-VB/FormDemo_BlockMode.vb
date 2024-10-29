@@ -34,15 +34,17 @@ Public Class FormDemo_BlockMode
     End Function
 
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+        If m_DeviceWrapper.hLibModule = IntPtr.Zero Or m_DeviceWrapper.hCommandModule = IntPtr.Zero Then
+            Me.Close()
+            Return
+        End If
+
         Dim enRet As ENUM_LIBWFX_ERRCODE
         m_scanningForm = New FormScanning
-
-
         REM Init LibWFXScan Library
         REM enRet = DeviceWrapper.LibWFX_Init()
         REM since we can't debug OCR engine, for debuging UI flow, use LIBWFX_INIT_MODE_NOOCR
         REM OCR will not work, but easier to debug UI while developing      
-
         If m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") = True Then
             MessageBox.Show("Status:[Please confirm whether the ""CheckWindowTitle"" parameter content in LibWebFxScan.ini are all closed!!]", "Warning")
             WriteLog("Status:[LibWFX_InitEx Fail]")
@@ -79,6 +81,9 @@ Public Class FormDemo_BlockMode
     End Sub
 
     Private Sub MainForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
+        If m_DeviceWrapper.hLibModule = IntPtr.Zero Or m_DeviceWrapper.hCommandModule = IntPtr.Zero Then
+            Return
+        End If
         REM Release LibWFXScan Resource
         m_scanningForm.Dispose()
         m_scanningForm = Nothing
@@ -132,8 +137,33 @@ Public Class FormDemo_BlockMode
             Me.TEXT_LOG.Text += Environment.NewLine
             Me.TEXT_LOG.SelectionStart = Me.TEXT_LOG.Text.Length
             Me.TEXT_LOG.ScrollToCaret()
+            m_DeviceWrapper.m_pfnLibWFX_WriteAPLog(szMsg)
         End If
-        m_DeviceWrapper.m_pfnLibWFX_WriteAPLog(szMsg)
+
+    End Sub
+
+
+
+    Private Sub DispatcherWriteLog(ByVal szMsg As String)
+        Dim WriteLogCB As New WriteLogCB(AddressOf WriteLog)
+        Me.BeginInvoke(WriteLogCB, szMsg)
+    End Sub
+
+    Private Delegate Sub PrintImgCB(ByVal szPath As String)
+    Private Sub DispatcherPrintImg(ByVal szPath As String)
+        REM If Me.TEXT_LOG.InvokeRequired Then
+        Dim PrintImgCB As New PrintImgCB(AddressOf PrintImg)
+        Me.BeginInvoke(PrintImgCB, szPath)
+
+    End Sub
+
+    Private Sub PrintImg(ByVal szPath As String)
+        If Me.m_nCount Mod 2 = 1 Then
+            PIC_IMAGE1.Load(szPath)
+        Else
+            PIC_IMAGE2.Load(szPath)
+        End If
+
     End Sub
 
     Private Sub CMB_DEVICE_LIST_SelectedIndexChanged(sender As Object, e As EventArgs) Handles CMB_DEVICE_LIST.SelectedIndexChanged
@@ -537,14 +567,14 @@ Public Class FormDemo_BlockMode
             Dim pszErrorMsg2 As String
             m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(enRet, pszErrorMsg)
             pszErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg)
-            WriteLog("Status:[LibWFX_SynchronizeScan Fail [" + Convert.ToDecimal(enRet).ToString + "]]" + pszErrorMsg2.ToString)  REM get fail message
+            DispatcherWriteLog("Status:[LibWFX_SynchronizeScan Fail [" + Convert.ToDecimal(enRet).ToString + "]]" + pszErrorMsg2.ToString)  REM get fail message
         ElseIf szEventRet.Length > 1 Then
             SetCommandString(CMB_DEVICE_LIST.SelectedItem.ToString(), COMBO_COMMAND.Text)
-            WriteLog("Status:[Device Ready!]")
-            WriteLog(szEventRet)  REM get event message
+            DispatcherWriteLog("Status:[Device Ready!]")
+            DispatcherWriteLog(szEventRet)  REM get event message
 
             If szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" And szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[1]" And szEventRet <> "LIBWFX_EVENT_NO_PAPER" Then
-                WriteLog("Status:[Scan End]")
+                DispatcherWriteLog("Status:[Scan End]")
                 Return
             End If
 
@@ -556,29 +586,39 @@ Public Class FormDemo_BlockMode
             Dim ScanImageArray() As String = szScanImageList.Trim().Split(myDelims, StringSplitOptions.None)
             Dim OCRResultArray() As String = szOCRResultList.Trim().Split(myDelims, StringSplitOptions.None)
 
-            If ScanImageArray.Count > 0 Then
-                For idx As Integer = 0 To ScanImageArray.Count - 1
-                    WriteLog(ScanImageArray(idx).Trim())  REM get each image path
+            If Command.IndexOf("""rawdata"":true") <> -1 Then
+                If OCRResultArray.Count > 0 Then
+                    For idx As Integer = 0 To OCRResultArray.Count - 1
+                        DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each image path
+                    Next
+                End If
+            Else
+                If ScanImageArray.Count > 0 Then
+                    For idx As Integer = 0 To ScanImageArray.Count - 1
+                        DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
 
-                    If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And ScanImageArray(idx) <> String.Empty) Then
-                        m_nCount += 1
-                        If m_nCount Mod 2 = 1 Then
-                            PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
-                        Else
-                            PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
+                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                            m_nCount += 1
+                            REM If m_nCount Mod 2 = 1 Then
+                            REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
+                            REM Else
+                            REM PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
+                            REM   End If
+                            DispatcherPrintImg(ScanImageArray(idx).Trim())
                         End If
-                    End If
-                    If OCRResultArray(idx) <> String.Empty Then
-                        WriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
-                    End If
-                Next
+                        If String.IsNullOrEmpty(OCRResultArray(idx).Trim()) = False Then
+                        	DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
+                        End If
+                    Next
+                End If
             End If
         Else
+
             SetCommandString(CMB_DEVICE_LIST.SelectedItem.ToString(), COMBO_COMMAND.Text)
-            WriteLog("Status:[Device Ready!]")
+            DispatcherWriteLog("Status:[Device Ready!]")
 
             If szExceptionRet.Length > 1 Then
-                WriteLog(szExceptionRet)  REM get exception message
+                DispatcherWriteLog(szExceptionRet)  REM get exception message
             End If
 
             Dim szScanImageList As String = Marshal.PtrToStringUni(pScanImageList)
@@ -589,29 +629,38 @@ Public Class FormDemo_BlockMode
             Dim ScanImageArray() As String = szScanImageList.Trim().Split(myDelims, StringSplitOptions.None)
             Dim OCRResultArray() As String = szOCRResultList.Trim().Split(myDelims, StringSplitOptions.None)
 
-            If ScanImageArray.Count > 0 Then
-                For idx As Integer = 0 To ScanImageArray.Count - 1
-                    WriteLog(ScanImageArray(idx).Trim())  REM get each image path
+            If Command.IndexOf("""rawdata"":true") <> -1 Then
+                If OCRResultArray.Count > 0 Then
+                    For idx As Integer = 0 To OCRResultArray.Count - 1
+                        DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each image path
+                    Next
+                End If
+            Else
+                If ScanImageArray.Count > 0 Then
+                    For idx As Integer = 0 To ScanImageArray.Count - 1
+                        DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
 
-                    If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And ScanImageArray(idx) <> String.Empty) Then
-                        m_nCount += 1
-                        If m_nCount Mod 2 = 1 Then
-                            PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
-                        Else
-                            PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
+                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                            m_nCount += 1
+                            REM If m_nCount Mod 2 = 1 Then
+                            REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
+                            REM Else
+                            REM PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
+                            REM   End If
+                            DispatcherPrintImg(ScanImageArray(idx).Trim())
                         End If
-                    End If
-                    If OCRResultArray(idx) <> String.Empty Then
-                        WriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
-                    End If
-                Next
+                      
+                        If String.IsNullOrEmpty(OCRResultArray(idx).Trim()) = False Then
+                        	DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
+                        End If
+                    Next
+                End If
             End If
         End If
-
         If enRet = ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_COMMAND_KEY_MISMATCH Then
-            WriteLog("Status:[There are some mismatched key in command]")
+            DispatcherWriteLog("Status:[There are some mismatched key in command]")
         End If
-        WriteLog("Status:[Scan End]")
+        DispatcherWriteLog("Status:[Scan End]")
     End Sub
 
     Private Sub ShowScanningDlg(ByVal enableDlg As Boolean)
@@ -619,9 +668,12 @@ Public Class FormDemo_BlockMode
             m_scanningForm.Show()
             m_scanningForm.Refresh()
             Me.Hide()
+            Me.Refresh()
         Else
             m_scanningForm.Hide()
+            m_scanningForm.Refresh()
             Me.Show()
+            Me.Refresh()
         End If
     End Sub
 
