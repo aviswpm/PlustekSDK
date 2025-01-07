@@ -1,0 +1,49 @@
+﻿Build started 1/6/2025 10:45:19 AM.
+     1>Project "C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\MFCDemo\LibWFXDemo.vcxproj" on node 2 (Build target(s)).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /I..\..\WebScan\inc /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D _WINDOWS /D NDEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yc"stdafx.h" /Fp"x64\Release\LibWFXDemo.pch" /Fo"x64\Release\\" /Fd"x64\Release\vc140.pdb" /Gd /TP /errorReport:prompt stdafx.cpp
+         stdafx.cpp
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\CL.exe /c /I..\..\WebScan\inc /Zi /nologo /W3 /WX- /sdl /O2 /Oi /GL /D WIN32 /D _WINDOWS /D NDEBUG /D _UNICODE /D UNICODE /D _AFXDLL /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Zc:inline /Yu"stdafx.h" /Fp"x64\Release\LibWFXDemo.pch" /Fo"x64\Release\\" /Fd"x64\Release\vc140.pdb" /Gd /TP /errorReport:prompt ECODlg.cpp LibWFXDemo.cpp LibWFXDemoDlg_BlockMode.cpp LibWFXDemoDlg_NonBlockMode.cpp ScanningDlg.cpp WarmupDlg.cpp
+         ECODlg.cpp
+         LibWFXDemo.cpp
+         LibWFXDemoDlg_BlockMode.cpp
+     1>LibWFXDemoDlg_BlockMode.cpp(510): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+     1>LibWFXDemoDlg_BlockMode.cpp(535): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+     1>LibWFXDemoDlg_BlockMode.cpp(626): warning C4477: 'sprintf_s' : format string '%S' requires an argument of type 'wchar_t *', but variadic argument 1 has type 'CString'
+     1>LibWFXDemoDlg_BlockMode.cpp(578): warning C4101: 'szPath': unreferenced local variable
+     1>LibWFXDemoDlg_BlockMode.cpp(702): warning C4805: '==': unsafe mix of type 'BOOL' and type 'bool' in operation
+     1>LibWFXDemoDlg_BlockMode.cpp(1251): warning C4101: 'enPaperStatus': unreferenced local variable
+         LibWFXDemoDlg_NonBlockMode.cpp
+     1>LibWFXDemoDlg_NonBlockMode.cpp(259): warning C4311: 'type cast': pointer truncation from 'void *' to 'int'
+     1>LibWFXDemoDlg_NonBlockMode.cpp(259): warning C4302: 'type cast': truncation from 'void *' to 'int'
+     1>LibWFXDemoDlg_NonBlockMode.cpp(807): warning C4267: '=': conversion from 'size_t' to 'int', possible loss of data
+     1>LibWFXDemoDlg_NonBlockMode.cpp(832): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+     1>LibWFXDemoDlg_NonBlockMode.cpp(929): warning C4477: 'sprintf_s' : format string '%S' requires an argument of type 'wchar_t *', but variadic argument 1 has type 'CString'
+     1>LibWFXDemoDlg_NonBlockMode.cpp(878): warning C4101: 'szPath': unreferenced local variable
+     1>LibWFXDemoDlg_NonBlockMode.cpp(947): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+     1>LibWFXDemoDlg_NonBlockMode.cpp(1007): warning C4805: '==': unsafe mix of type 'BOOL' and type 'bool' in operation
+     1>LibWFXDemoDlg_NonBlockMode.cpp(1111): warning C4244: '=': conversion from 'WPARAM' to 'int', possible loss of data
+     1>LibWFXDemoDlg_NonBlockMode.cpp(1115): warning C4244: 'argument': conversion from 'WPARAM' to 'int', possible loss of data
+     1>LibWFXDemoDlg_NonBlockMode.cpp(1136): warning C4244: 'argument': conversion from 'WPARAM' to 'int', possible loss of data
+         ScanningDlg.cpp
+         WarmupDlg.cpp
+       ResourceCompile:
+         C:\Program Files (x86)\Windows Kits\8.1\bin\x86\rc.exe /D NDEBUG /D _UNICODE /D UNICODE /D _AFXDLL /l"0x0409" /Ix64\Release\ /nologo /fo"x64\Release\LibWFXDemo.res" LibWFXDemo.rc 
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\Bin\x64\Release\LibWFXDemo.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:..\lib json_x64\Release\jansson.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /manifestinput:"C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\Include\Manifest\dpiaware.manifest" /Debug /PDB:"C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\Bin\x64\Release\LibWFXDemo.pdb" /SUBSYSTEM:WINDOWS /OPT:REF /OPT:ICF /LTCG:incremental /TLBID:1 /ENTRY:"wWinMainCRTStartup" /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\Bin\x64\Release\LibWFXDemo.lib" /MACHINE:X64 x64\Release\LibWFXDemo.res
+         x64\Release\ECODlg.obj
+         x64\Release\LibWFXDemo.obj
+         x64\Release\LibWFXDemoDlg_BlockMode.obj
+         x64\Release\LibWFXDemoDlg_NonBlockMode.obj
+         x64\Release\ScanningDlg.obj
+         x64\Release\stdafx.obj
+         x64\Release\WarmupDlg.obj
+         Generating code
+         All 987 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+         Finished generating code
+         LibWFXDemo.vcxproj -> C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\Bin\x64\Release\LibWFXDemo.exe
+     1>Done Building Project "C:\Users\wxh19\Desktop\v2.0.4\DemoCode\LibFXScan\MFCDemo\LibWFXDemo.vcxproj" (Build target(s)).
+
+Build succeeded.
+
+Time Elapsed 00:00:06.49
