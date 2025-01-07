@@ -1,0 +1,20 @@
+﻿<Window x:Name="FormECO1" x:Class="LibWFXDemo_CSharp.FormECO"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibWFXDemo_WPF"
+        mc:Ignorable="d"
+        Title="ECO" Height="134" Width="355">
+    <Grid Margin="0,0,0,2">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="139*"/>
+            <ColumnDefinition Width="208*"/>
+        </Grid.ColumnDefinitions>
+        <Label x:Name="label" Content="ECO Time :" HorizontalAlignment="Left" Margin="21,22,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="TXT_ECO_TIME" HorizontalAlignment="Left" Height="23" Margin="101,23,0,0" TextWrapping="Wrap" Text="TextBox" VerticalAlignment="Top" Width="120" Grid.ColumnSpan="2"/>
+        <Label x:Name="label1" Content="mins" HorizontalAlignment="Left" Margin="92,22,0,0" VerticalAlignment="Top" Grid.Column="1"/>
+        <Button x:Name="BTN_SET" Content="Set" HorizontalAlignment="Left" Margin="115,70,0,0" VerticalAlignment="Top" Width="75" Grid.Column="1" BorderBrush="#FF0D0D0E" Background="#FF7EC3F3" Click="BTN_SET_Click"/>
+
+    </Grid>
+</Window>
