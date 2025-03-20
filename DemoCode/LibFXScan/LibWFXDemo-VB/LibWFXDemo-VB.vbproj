@@ -135,6 +135,12 @@
   <ItemGroup>
     <Compile Include="ApplicationEvents.vb" />
     <Compile Include="DeviceWrapper.vb" />
+    <Compile Include="FormCalibration.Designer.vb">
+      <DependentUpon>FormCalibration.vb</DependentUpon>
+    </Compile>
+    <Compile Include="FormCalibration.vb">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="FormScanning.Designer.vb">
       <DependentUpon>FormScanning.vb</DependentUpon>
     </Compile>
@@ -189,6 +195,9 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="FormCalibration.resx">
+      <DependentUpon>FormCalibration.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="FormScanning.resx">
       <DependentUpon>FormScanning.vb</DependentUpon>
     </EmbeddedResource>

@@ -9,6 +9,11 @@ Public Class FormDemo
     Private Sub MainForm_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         Dim ParamVal As String = Space$(5)
         Dim LenParamVal As Long = 1
+        If System.IO.File.Exists(Application.StartupPath + "\\Newtonsoft.Json.dll") = False Then
+            MessageBox.Show("Please ensure Newtonsoft.Json.dll is available in the execution directory.", "Warning")
+            Me.Close()
+            Return
+        End If
         If System.IO.File.Exists(Application.StartupPath + "\\LibWebFxScan.ini") = True Then
             LenParamVal = GetPrivateProfileString("Style", "UseModeBlock", "1", ParamVal, Len(ParamVal), Application.StartupPath + "\\LibWebFxScan.ini")
         Else

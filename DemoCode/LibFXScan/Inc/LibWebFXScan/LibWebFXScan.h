@@ -84,7 +84,8 @@ typedef enum _ENUM_LIBWFX_ERRCODE
 	LIBWFX_ERRCODE_SAVEPATH_ERROR,              /**< When the RecycleSaveFolder is executed, the save path format error */
 	LIBWFX_ERRCODE_TIMEOUT,                     /**< Timeout error */
 	LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
-	LIBWFX_ERRCODE_SPECIFIC_AP_OPENING          /**< The unauthorized program is running */
+	LIBWFX_ERRCODE_SPECIFIC_AP_OPENING,         /**< The unauthorized program is running */
+	LIBWFX_ERRCODE_PARM_VALUE_MISMATCH          /**< Undefined parameter value appears in command */
 } ENUM_LIBWFX_ERRCODE;
 
 typedef enum _ENUM_LIBWFX_EVENT_CODE
@@ -188,7 +189,7 @@ typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETPAPERSTATUS)(ENUM_LIBWFX_EVEN
 typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_MERGETOPDF)(wchar_t* szFileListIn);
 typedef BOOL (LIBWFX_API* LIBWFX_ISWINDOWEXIST)(wchar_t* szWindowNameIn);
 typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETPRODUCTNAMEDAT)(char* ProductName,  char* id, char* module);
-typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETLASTERRORCODE)(ENUM_LIBWFX_ERRCODE enErrorCode, const wchar_t** szErrorMsg);
+typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETLASTERRORCODE)(ENUM_LIBWFX_ERRCODE enErrorCode, wchar_t* szErrorMsg);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_SYNCHRONIZESCAN)(wchar_t* szRequestCmdIn, const wchar_t** szScanImageList, const wchar_t** szOCRResultList, const wchar_t** szExceptionRet, const wchar_t** szEventRet);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_GETCERTIFICATEPERMISSION)(const wchar_t** szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE enDataType);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_RECYCLESAVEFOLDER)(void);

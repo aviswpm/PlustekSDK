@@ -35,6 +35,7 @@ CLibWFXDemoDlg_NonBlockMode::CLibWFXDemoDlg_NonBlockMode(CWnd* pParent /*=NULL*/
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_dlgWarmup = NULL;
+	m_CalibrationDlg = NULL;
 }
 
 CLibWFXDemoDlg_NonBlockMode::~CLibWFXDemoDlg_NonBlockMode()
@@ -212,7 +213,7 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 				szFilePath.Format(_T("%s"), (wchar_t *)pParam1);
 				//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)pParam1, NULL);
 				pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szFilePath.GetString()), NULL);
-				if (!wcsstr((wchar_t *)pParam1, L".pdf") && !wcsstr((wchar_t *)pParam1, L".tif") && szFilePath != "CustomPhotoZone")
+				if (!wcsstr((wchar_t *)pParam1, L".pdf") && !wcsstr((wchar_t *)pParam1, L".tif") && !wcsstr(CharUpper((wchar_t *)pParam1), L"_PHOTO"))
 					pLibWFXDemoDlg->ShowImage((wchar_t *)pParam1);
 			}
 			else
@@ -638,7 +639,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetJsonString(CString szDevName)
 		szDefJson.Append(szDevName);
 		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}"));
 	}
-	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U"))
+	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U") || szDevName == _T("FE7010_FE7011"))
 	{
 		szDefJson.Append(_T("{\"device-name\":\""));
 		szDefJson.Append(szDevName);
@@ -744,15 +745,15 @@ BOOL CLibWFXDemoDlg_NonBlockMode::InitDevicesList(VOID)
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
 		if (LIBWFX_ERRCODE_NO_INIT == enErrCode || LIBWFX_ERRCODE_LOAD_MRTD_DLL_FAIL == enErrCode || LIBWFX_ERRCODE_SCANNING == enErrCode)
 		{			
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		}
 		else
 		{
-			m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, &szErrorMsg);
+			m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, LIBWFX_ERRCODE_NO_DEVICES);		
 		}
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
@@ -978,8 +979,8 @@ void CLibWFXDemoDlg_NonBlockMode::GetCertificatePermission()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1008,9 +1009,9 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 		{
 			::MessageBoxW(hwnd, L"Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!", L"Warning", MB_OK | MB_ICONEXCLAMATION);
 			CString szErr;
-			szErr.Format(_T("[ Warning ]LIBWFX_ERRCODE_SPECIFIC_AP_OPENING - [%d]"), LIBWFX_ERRCODE_SPECIFIC_AP_OPENING);
+			szErr.Format(_T("[ Warning ] LIBWFX_ERRCODE_SPECIFIC_AP_OPENING - [%d]"), LIBWFX_ERRCODE_SPECIFIC_AP_OPENING);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-			szErr.Format(_T("[ Warning ]LIBWFX_ERRCODE_NO_INIT - [%d]"), LIBWFX_ERRCODE_NO_INIT);
+			szErr.Format(_T("[ Warning ] LIBWFX_ERRCODE_NO_INIT - [%d]"), LIBWFX_ERRCODE_NO_INIT);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 			return FALSE;
 		}
@@ -1049,8 +1050,8 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 		else
 		{
 			CString szErr;
-			const wchar_t* szErrorMsg = NULL;
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 
 			if (enErrCode == LIBWFX_ERRCODE_PATH_TOO_LONG)
@@ -1074,8 +1075,8 @@ LRESULT CLibWFXDemoDlg_NonBlockMode::OnStartScan(WPARAM wPararm, LPARAM lParam)
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1185,8 +1186,8 @@ LRESULT CLibWFXDemoDlg_NonBlockMode::OnEjectPaper(WPARAM wPararm, LPARAM lParam)
 		else
 		{
 			CString szErr;
-			const wchar_t* szErrorMsg = NULL;
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		}
@@ -1205,8 +1206,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonSetProperty()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1288,8 +1289,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEco()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -1330,8 +1331,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEject()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1353,8 +1354,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonPaperReady()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1375,8 +1376,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonPaperstatus()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1392,8 +1393,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonCalibrate()
 	if (nSelIdx == -1)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, LIBWFX_ERRCODE_NO_DEVICES);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -1408,19 +1409,22 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonCalibrate()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
 	}
 
+	ShowCalibrateDlg(true);
 	enErrCode = m_pfnLibWFX_Calibrate();
+	ShowCalibrateDlg(false);
+
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1524,8 +1528,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonRecyclesavefolder()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1559,8 +1563,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonMergepdf()
 		if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 		{
 			CString szErr;
-			const wchar_t* szErrorMsg = NULL;
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		}
@@ -1613,4 +1617,22 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonRegister()
 		_tcscat_s(szRegisterEXEPath, REGISTER_EXENAME);
 	}
 	ShellExecute(NULL, _T("open"), szRegisterEXEPath, L"", NULL, SW_NORMAL);
+}
+
+void CLibWFXDemoDlg_NonBlockMode::ShowCalibrateDlg(bool enableDlg)
+{
+	if (enableDlg)
+	{
+		m_CalibrationDlg = new CalibrationDlg();
+		m_CalibrationDlg->Create(CalibrationDlg::IDD, this);
+		m_CalibrationDlg->ShowWindow(SW_SHOW);	
+		this->ShowWindow(SW_HIDE);
+	}
+	else
+	{
+		m_CalibrationDlg->EndDialog(0);
+		delete m_CalibrationDlg;
+		m_CalibrationDlg = NULL;		
+		this->ShowWindow(SW_SHOW);
+	}
 }

@@ -1,4 +1,17 @@
 # Release Note
+
+# **[GitHub - Version 2.0.5]**
+
+>## PlustekSDK_LDSetup_25112_x64 | PlustekSDK_LDSetup_25112_x86.exe
+### AviScanProcess - *v1.0.1.25112*
+### WebFXScan2  - *v1.1.19.25112*
+- **Update**
+  - Fix activate register issue
+  - Optimize UV ​​and IR output process
+  - CheckWindowsTitle mechanism adjustment
+  - Optimize Security, Reliability and Maintainability
+
+
 # **[GitHub - Version 2.0.4]**
 
 >## PlustekSDK_LDSetup_24505_x64 | PlustekSDK_LDSetup_24505_x86.exe

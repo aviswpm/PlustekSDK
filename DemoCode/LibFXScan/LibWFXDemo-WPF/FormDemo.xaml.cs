@@ -26,6 +26,13 @@ namespace LibWFXDemo_CSharp
             string szFilePath = Environment.CurrentDirectory + "\\LibWebFxScan.ini";
             int UseModeBlock = 1;
 
+            string szDLLPath = Environment.CurrentDirectory + "\\Newtonsoft.Json.dll";
+            if (!File.Exists(szDLLPath))
+            {
+                MessageBox.Show("Please ensure Newtonsoft.Json.dll is available in the execution directory.", "Warning");
+                Environment.Exit(0);
+            }
+
             this.Hide();
             if (File.Exists(szFilePath))
             {

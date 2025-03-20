@@ -7,7 +7,7 @@ The Plustek SDK is offered in two variations:
 - Windows Desktop SDK (hereafter referred to as "LibFXScan" or "Lib SDK") : 
      allows developers to build desktop applications for Windows that interact with Plustek scanners.
 - Web Based SDK (hereafter referred to as "WebFXScan" or "Web SDK") : 
-    enables developers to create web applications that can utilize scanning capabilities of Plustek scanners.
+    enables developers to create web applications that can utilize scanning capabilities of Plustek scanners. This project has passed the SonarCloud scan test, ensuring code quality and security. For details, please see the [Full Report].
 
 For advanced services or tailored solutions, paid consultations are available, please visit [Plustek].
 If further technical support is required, a technical support fee of USD$300/day will be charged.
@@ -39,7 +39,7 @@ Plustek proporciona un Kit de Desarrollo de Software (SDK) que permite a los des
 Plustek SDK está disponible en dos versiones: 
 
 - SDK de Desktop para Windows (En lo sucesivo referido "LibFXScan" o "Lib SDK"): permite a los desarrolladores crear aplicaciones de desktop para Windows que interactúen con escáneres Plustek. 
-- SDK basado en web (En lo sucesivo referido "WebFXScan" o "SDK web"): permite a los desarrolladores crear aplicaciones web (javascript) que puedan utilizar funciones de escaneo de los escáneres Plustek. 
+- SDK basado en web (En lo sucesivo referido "WebFXScan" o "SDK web"): permite a los desarrolladores crear aplicaciones web (javascript) que puedan utilizar funciones de escaneo de los escáneres Plustek. SonarCloud ha analizado este proyecto para garantizar la calidad y la seguridad del código fuente. Para obtener más información, consulte [Informe Completo].
 
 Para servicios avanzados o soluciones personalizadas, hay consultas pagas disponibles, visite [Plustek](https://plustek.com/lam/solutions/sdk.php)
 Si desea el soporte técnico adicional, hay cobro por la tarifa de soporte técnico por USD$300/día
@@ -70,7 +70,7 @@ Plustek SDK 提供兩種版本：
 - Windows Desktop SDK（以下稱為「LibFXScan」或「Lib SDK」）：
     允許開發人員建立與 Plustek 掃描器互動的 Windows 桌面應用程式。 
 - 基於 Web 的 SDK（以下稱為「WebFXScan」或「Web SDK」）：
-    使開發人員能夠建立可利用Plustek 掃描器的掃描功能的網路應用程式。
+    使開發人員能夠建立可利用Plustek 掃描器的掃描功能的網路應用程式。本專案已通過 SonarCloud 掃描，確保程式碼品質與安全性，詳細請參見 [完整報告]。
 
 如需更多服務或客製化解決方案，可提供付費諮詢服務，詳細請至 [Plustek 官方網站]。
 若需進一步技術支援，需酌收技術支援費用 USD$300/天
@@ -112,7 +112,10 @@ Plustek SDK 提供兩種版本：
 
     [Plustek 官方網站]:https://plustek.com/tw/solutions/sdk.php
     [Plustek]:https://plustek.com/us/solutions/sdk.php
-
+    
+    [完整報告]:https://sonarcloud.io/explore/projects?search=WebFXScan
+    [Full Report]:https://sonarcloud.io/explore/projects?search=WebFXScan
+    [Informe Completo]:https://sonarcloud.io/explore/projects?search=WebFXScan
 
         
         

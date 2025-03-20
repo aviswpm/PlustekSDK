@@ -74,6 +74,7 @@ Public Class DeviceWrapper
         LIBWFX_ERRCODE_TIMEOUT = 1013                   REM *< Timeout Error
         LIBWFX_ERRCODE_SERVER_OCCUPIED = 1014           REM *< Server has been occupied by other connections
         LIBWFX_ERRCODE_SPECIFIC_AP_OPENING = 1015       REM *< The unauthorized program is running
+        LIBWFX_ERRCODE_PARM_VALUE_MISMATCH = 1016       REM *< Undefined parameter value appears in command
     End Enum
 
     Public Enum ENUM_LIBWFX_EVENT_CODE
@@ -197,7 +198,7 @@ Public Class DeviceWrapper
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_IsWindowExist(ByVal szWindowNameIn As String) As Boolean
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
-    Public Delegate Function LibWFX_GetLastErrorCode(ByVal enErrorCode As ENUM_LIBWFX_ERRCODE, ByRef szErrorMsg As IntPtr) As ENUM_LIBWFX_ERRCODE
+    Public Delegate Function LibWFX_GetLastErrorCode(ByVal enErrorCode As ENUM_LIBWFX_ERRCODE, ByVal szErrorMsg As IntPtr) As ENUM_LIBWFX_ERRCODE
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Sub EditCommand(ByVal szCommand As String, ByRef pCommandOut As IntPtr)
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>

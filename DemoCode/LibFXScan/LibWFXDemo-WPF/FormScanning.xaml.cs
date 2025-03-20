@@ -23,10 +23,5 @@ namespace LibWFXDemo_CSharp
         {
             InitializeComponent();
         }
-
-        private void FormWarmup_Load(object sender, EventArgs e)
-        {
-            //ControlBox = false;
-        }
     }
 }

@@ -9,6 +9,7 @@ Imports System.Threading
 Public Class FormDemo_BlockMode
     Dim m_DeviceWrapper As DeviceWrapper = New DeviceWrapper()
     Dim m_scanningForm As FormScanning
+    Dim m_calibrationForm As FormCalibration
     Dim m_nCount As Integer = 1
     Dim m_MaxCMDItems As Integer = 5
 
@@ -41,6 +42,7 @@ Public Class FormDemo_BlockMode
 
         Dim enRet As ENUM_LIBWFX_ERRCODE
         m_scanningForm = New FormScanning
+        m_calibrationForm = New FormCalibration
         REM Init LibWFXScan Library
         REM enRet = DeviceWrapper.LibWFX_Init()
         REM since we can't debug OCR engine, for debuging UI flow, use LIBWFX_INIT_MODE_NOOCR
@@ -86,8 +88,6 @@ Public Class FormDemo_BlockMode
             Return
         End If
         REM Release LibWFXScan Resource
-        m_scanningForm.Dispose()
-        m_scanningForm = Nothing
         m_DeviceWrapper.m_pfnLibWFX_CloseDevice()
         m_DeviceWrapper.m_pfnLibWFX_DeInit()
         'Me.Close()
@@ -181,7 +181,7 @@ Public Class FormDemo_BlockMode
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex"",""recognize-type"":""passport""}"
-        ElseIf szDevName = "776U" Or szDevName = "777U" Or szDevName = "778U" Then
+        ElseIf szDevName = "776U" Or szDevName = "777U" Or szDevName = "778U" Or szDevName = "FE7010_FE7011" Then
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex""}"
@@ -311,7 +311,9 @@ Public Class FormDemo_BlockMode
             Return
         End If
 
+        ShowDlg(True, "Calibrate")
         enRet = m_DeviceWrapper.m_pfnLibWFX_Calibrate()
+        ShowDlg(False, "Calibrate")
         If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
             WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
         Else
@@ -558,15 +560,15 @@ Public Class FormDemo_BlockMode
             Return
         End If
 
-        ShowScanningDlg(True)
+        ShowDlg(True, "Scan")
         enRet = m_DeviceWrapper.m_pfnLibWFX_SynchronizeScan(Command, pScanImageList, pOCRResultList, pExceptionRet, pEventRet)
-        ShowScanningDlg(False)
+        ShowDlg(False, "Scan")
 
         Dim szExceptionRet As String = Marshal.PtrToStringUni(pExceptionRet)
         Dim szEventRet As String = Marshal.PtrToStringUni(pEventRet)
 
         If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
-            Dim pszErrorMsg As IntPtr
+            Dim pszErrorMsg As IntPtr = Marshal.AllocHGlobal(260)
             Dim pszErrorMsg2 As String
             m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(enRet, pszErrorMsg)
             pszErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg)
@@ -576,7 +578,7 @@ Public Class FormDemo_BlockMode
             DispatcherWriteLog("Status:[Device Ready!]")
             DispatcherWriteLog(szEventRet)  REM get event message
 
-            If szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" And szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[1]" And szEventRet <> "LIBWFX_EVENT_NO_PAPER" Then
+            If szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" And szEventRet <> "LIBWFX_EVENT_UVSECURITY_DETECTED[1]" Then
                 DispatcherWriteLog("Status:[Scan End]")
                 Return
             End If
@@ -600,7 +602,7 @@ Public Class FormDemo_BlockMode
                     For idx As Integer = 0 To ScanImageArray.Count - 1
                         DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
 
-                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
                             REM m_nCount += 1
                             REM If m_nCount Mod 2 = 1 Then
                             REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
@@ -643,7 +645,7 @@ Public Class FormDemo_BlockMode
                     For idx As Integer = 0 To ScanImageArray.Count - 1
                         DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
 
-                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).Equals("CustomPhotoZone") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
                             REM m_nCount += 1
                             REM If m_nCount Mod 2 = 1 Then
                             REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
@@ -663,15 +665,27 @@ Public Class FormDemo_BlockMode
         DispatcherWriteLog("Status:[Scan End]")
     End Sub
 
-    Private Sub ShowScanningDlg(ByVal enableDlg As Boolean)
+    Private Sub ShowDlg(ByVal enableDlg As Boolean, ByVal szAction As String)
         If enableDlg Then
-            m_scanningForm.Show()
-            m_scanningForm.Refresh()
+            If szAction = "Scan" Then
+                m_calibrationForm.Hide()
+                m_scanningForm.Show()
+                m_scanningForm.Refresh()
+            ElseIf szAction = "Calibrate" Then
+                m_scanningForm.Hide()
+                m_calibrationForm.Show()
+                m_calibrationForm.Refresh()
+            End If
             Me.Hide()
             Me.Refresh()
         Else
-            m_scanningForm.Hide()
-            m_scanningForm.Refresh()
+            If szAction = "Scan" Then
+                m_scanningForm.Hide()
+                m_scanningForm.Refresh()
+            ElseIf szAction = "Calibrate" Then
+                m_calibrationForm.Hide()
+                m_calibrationForm.Refresh()
+            End If
             Me.Show()
             Me.Refresh()
         End If

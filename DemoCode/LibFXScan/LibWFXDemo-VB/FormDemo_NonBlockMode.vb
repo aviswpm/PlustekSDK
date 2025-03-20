@@ -10,6 +10,7 @@ Imports System.Boolean
 Public Class FormDemo_NonBlockMode
     Dim m_DeviceWrapper As DeviceWrapper = New DeviceWrapper()
     Dim m_warmupForm As FormWarmup
+    Dim m_calibrationForm As FormCalibration
     Dim m_nWarmupTotalTime As Integer = 0
     Dim m_nCount As Integer = 0
     Dim m_CBEvent As DeviceWrapper.LIBWFXEVENTCB
@@ -65,7 +66,7 @@ Public Class FormDemo_NonBlockMode
                         Return
                     End If
                     form.WriteLog(szPath)
-                    If (szPath.Contains(".pdf") <> True And szPath.Contains(".tif") <> True And szPath.Equals("CustomPhotoZone") <> True) Then
+                    If (szPath.Contains(".pdf") <> True And szPath.Contains(".tif") <> True And szPath.ToUpper.Contains("_PHOTO") <> True) Then
                         form.m_nCount += 1
                         If form.m_nCount Mod 2 = 1 Then
                             form.PIC_IMAGE1.Load(szPath)
@@ -182,7 +183,7 @@ Public Class FormDemo_NonBlockMode
             Return
         End If
         Dim enRet As ENUM_LIBWFX_ERRCODE
-
+        m_calibrationForm = New FormCalibration
         REM Init LibWFXScan Variable
         m_CBEvent = AddressOf LibWFXCallBack_Event
         m_CBNotify = AddressOf LibWFXCallBack_Notify
@@ -336,7 +337,7 @@ Public Class FormDemo_NonBlockMode
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex"",""autoscan"":true,""recognize-type"":""passport""}"
-        ElseIf szDevName = "776U" Or szDevName = "777U" Or szDevName = "778U" Then
+        ElseIf szDevName = "776U" Or szDevName = "777U" Or szDevName = "778U" Or szDevName = "FE7010_FE7011" Then
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex""}"
@@ -439,7 +440,9 @@ Public Class FormDemo_NonBlockMode
             Return
         End If
 
+        ShowCalibrateDlg(True)
         enRet = m_DeviceWrapper.m_pfnLibWFX_Calibrate()
+        ShowCalibrateDlg(False)
         If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
             WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
         Else
@@ -769,5 +772,18 @@ Public Class FormDemo_NonBlockMode
         Catch ex As Exception
             Console.WriteLine("An error occurred: " & ex.Message)
         End Try
+    End Sub
+    Private Sub ShowCalibrateDlg(ByVal enableDlg As Boolean)
+        If enableDlg Then
+            m_calibrationForm.Show()
+            m_calibrationForm.Refresh()
+            Me.Hide()
+            Me.Refresh()
+        Else
+            m_calibrationForm.Hide()
+            m_calibrationForm.Refresh()
+            Me.Show()
+            Me.Refresh()
+        End If
     End Sub
 End Class

@@ -418,6 +418,8 @@ class WebFxScanScanner {
     orig: { type: "boolean", value: "orig" },
     log: { type: "boolean", value: "log" },
     paperOrientation: { type: "string", value: "paper-orientation" },
+    ciphersnBase64key: { type: "string", value: "ciphersn-base64key" },
+    ciphersnCompanykey: { type: "string", value: "ciphersn-companykey" },
   };
 
   // Get all properties except for interfaceTable.
@@ -454,7 +456,7 @@ class WebFxScanScanner {
       const serverLibProperty = propertyItem[1].value;
       self.interfaceTable[serverLibProperty] = propertyItem[1];
     });
-    Object.keys(fixParamObj).map(function (key) {
+    Object.keys(fixParamObj).forEach(function (key) {
       if (key in self.interfaceTable) {
         const fixedKey = self.interfaceTable[key].value;
         const targetType = self.interfaceTable[key].type;
@@ -468,9 +470,8 @@ class WebFxScanScanner {
             ? String(targetValue)
             : targetValue;
         newParamObj[fixedKey] = fixedValue;
-      } else {
-        // Unsupported inputs will be skipped.
       }
+      // Unsupported inputs will be skipped.
     });
     return newParamObj;
   }
@@ -589,7 +590,7 @@ class WebFxScanServer {
     this.state.mode = mode;
   }
 
-  version = "1.1.7.24335";
+  version = "1.1.8.25064";
   state = {
     socket: null,
     ip: "",
@@ -788,6 +789,7 @@ class WebFxScanServer {
     autoScanCallback: null, // cache callback with autoScan
     beforeAutoScanCallback: null, // cache callback before execute autoScan
     scanCallback: null, // cache callback with scan()
+    eventCallback: null, // cache eventCallback with scan()
     socketMsgCollector: null, // collect websocker send/receive message
     scanIndex: 0, // progress
     isAutoScan: false,
@@ -1092,8 +1094,8 @@ class WebFxScanServer {
           }
 
           // map apiList then excute callback
-          Object.keys(self.apiList).map((apiName) => {
-            self.apiList[apiName].receive.map((receiveItem) => {
+          Object.keys(self.apiList).forEach((apiName) => {
+            self.apiList[apiName].receive.forEach((receiveItem) => {
               const { type: receiveType, func: receiveFunc } = receiveItem;
               if (receiveType === type && receiveFunc === func) {
                 self.apiList[apiName].callback(self, fixData);
@@ -1102,8 +1104,8 @@ class WebFxScanServer {
           });
 
           // map eventList then excute callback
-          Object.keys(self.eventList).map((eventName) => {
-            self.eventList[eventName].receive.map((receiveItem) => {
+          Object.keys(self.eventList).forEach((eventName) => {
+            self.eventList[eventName].receive.forEach((receiveItem) => {
               const {
                 type: receiveType,
                 func: receiveFunc,
@@ -1787,8 +1789,18 @@ class WebFxScanServer {
     const apiItem = this;
     try {
       const { type, func, data } = fixData;
-      const { err_code = 0, message } = data;
-      const { name, base64, recognizedata } = message;
+      const { err_code = 0, message = {} } = data;
+      if (err_code !== 0 && typeof message === "string") {
+        self.promiseReject(
+          apiItem,
+          WebFxScanUtility.failureResponse({
+            errCode: err_code,
+            message,
+            apiItem,
+          })
+        );
+      }
+      const { name = "", base64 = "", recognizedata } = message;
       const { ext } = WebFxScanUtility.pathParser(name);
 
       const result = {
@@ -1894,11 +1906,20 @@ class WebFxScanServer {
 
   // API: scan
   async scan(props) {
-    const { callback = null, timeout, hideBase64 } = props;
+    const {
+      callback = null,
+      eventCallback = (null),
+      timeout,
+      hideBase64,
+    } = props;
     const self = this;
 
     if (typeof callback === "function") {
       self.cache.scanCallback = callback;
+    }
+
+    if (typeof eventCallback === "function") {
+      self.cache.eventCallback = eventCallback;
     }
 
     return self.notify("scan", null, timeout, { hideBase64 });
@@ -1954,6 +1975,9 @@ class WebFxScanServer {
 
       // reset api timeout if receive notify code 6
       if (type === "callback" && func === "LIBWFX_EVENT_CODE") {
+        if (typeof self.cache.eventCallback === "function") {
+          self.cache.eventCallback(event_code);
+        }
         self.resetTimeout("scan");
         return;
       }
@@ -2482,8 +2506,18 @@ class WebFxScan {
   }
 
   scan(props = {}) {
-    const { callback = null, timeout = null, hideBase64 = false } = props;
-    return this.serverInstance.scan({ callback, timeout, hideBase64 });
+    const {
+      callback = null,
+      eventCallback = null,
+      timeout = null,
+      hideBase64 = false,
+    } = props;
+    return this.serverInstance.scan({
+      callback,
+      eventCallback,
+      timeout,
+      hideBase64,
+    });
   }
 
   convert(props) {

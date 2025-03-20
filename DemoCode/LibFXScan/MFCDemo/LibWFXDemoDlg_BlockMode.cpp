@@ -29,6 +29,7 @@ CLibWFXDemoDlg_BlockMode::CLibWFXDemoDlg_BlockMode(CWnd* pParent /*=NULL*/)
 {
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_ScanningDlg = NULL;
+	m_CalibrationDlg = NULL;
 	vecImagePath.clear();
 }
 
@@ -349,7 +350,7 @@ BOOL CLibWFXDemoDlg_BlockMode::GetJsonString(CString szDevName)
 		szDefJson.Append(szDevName);
 		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}"));
 	}
-	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U"))
+	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U") || szDevName == _T("FE7010_FE7011"))
 	{
 		szDefJson.Append(_T("{\"device-name\":\""));
 		szDefJson.Append(szDevName);
@@ -452,15 +453,15 @@ BOOL CLibWFXDemoDlg_BlockMode::InitDevicesList(VOID)
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
 		if (LIBWFX_ERRCODE_NO_INIT == enErrCode || LIBWFX_ERRCODE_LOAD_MRTD_DLL_FAIL == enErrCode || LIBWFX_ERRCODE_SCANNING == enErrCode)
 		{
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		}
 		else
 		{
-			m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, &szErrorMsg);
+			m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, LIBWFX_ERRCODE_NO_DEVICES);
 		}
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
@@ -673,8 +674,8 @@ void CLibWFXDemoDlg_BlockMode::GetCertificatePermission()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -744,8 +745,8 @@ BOOL CLibWFXDemoDlg_BlockMode::OnInitDialog()
 		else
 		{
 			CString szErr;
-			const wchar_t* szErrorMsg = NULL;
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 
 			if (enErrCode == LIBWFX_ERRCODE_PATH_TOO_LONG)
@@ -810,8 +811,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEco()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -821,8 +822,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEco()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -842,8 +843,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEject()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -872,8 +873,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEject()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -888,8 +889,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperReady()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -907,8 +908,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperReady()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -920,8 +921,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperstatus()
 	if (nSelIdx == -1)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, LIBWFX_ERRCODE_NO_DEVICES);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -932,8 +933,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperstatus()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -949,8 +950,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperstatus()
 	else
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -965,8 +966,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonCalibrate()
 	if (nSelIdx == -1)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(LIBWFX_ERRCODE_NO_DEVICES, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, LIBWFX_ERRCODE_NO_DEVICES);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));	
 		return;
@@ -982,19 +983,22 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonCalibrate()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
 	}
 
+	ShowDlg(true, L"Calibrate");
 	enErrCode = m_pfnLibWFX_Calibrate();
+	ShowDlg(false, L"Calibrate");
+
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}
@@ -1097,9 +1101,11 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 		::MessageBox(NULL, _T("BlockScan do not support autoscan!! If you want to implement autoscan, please refer to the AutoCaptureDemo-C++."), _T("Message"), MB_YESNO);
 		return;
 	}
-	ShowScanningDlg(true);
+	//ShowScanningDlg(true);
+	ShowDlg(true, L"Scan");
 	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_SynchronizeScan((wchar_t *)szCommand.GetString(), &szScanImageList, &szOCRResultList, &szExceptionRet, &szEventRet);
-	ShowScanningDlg(false);
+	//ShowScanningDlg(false);
+	ShowDlg(false, L"Scan");
 
 	int nUTF8Ecxeption = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szExceptionRet, -1, NULL, 0, NULL, NULL);
 	int nUTF8Event = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szEventRet, -1, NULL, 0, NULL, NULL);
@@ -1107,8 +1113,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));  //get fail message
 	}
@@ -1120,40 +1126,45 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 		WriteLog(_T("Status:[Device Ready!]"));
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));   //get event message
 
-		if (szErr != "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" && szErr != "LIBWFX_EVENT_UVSECURITY_DETECTED[1]" && szErr != "LIBWFX_EVENT_NO_PAPER")
+		if (szErr != "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" && szErr != "LIBWFX_EVENT_UVSECURITY_DETECTED[1]")
 		{
 			WriteLog(_T("Status:[Scan End]"));
 			return;
 		}
 
-		wchar_t* next_token, *next_token2;
+		wchar_t* token;
+		wchar_t* token2;
 		const wchar_t delim[] = L"|&|";
-		wchar_t* token = wcstok_s((wchar_t*)szScanImageList, delim, &next_token);
-		wchar_t* token2 = wcstok_s((wchar_t*)szOCRResultList, delim, &next_token2);
 
 		if (szCommand.Find(_T("\"rawdata\":true")) != -1)
 		{
-			while (token2)
+			wchar_t* position = _wcsdup((wchar_t*)szOCRResultList);
+			while ((token = wcsstr(position, delim)) != nullptr)
 			{
-				if (wcscmp((wchar_t *)rtrim(token2), L""))
-					WriteLog(rtrim(token2)); //get each ocr result
-				token2 = wcstok_s(NULL, delim, &next_token2);
+				*token = L'\0';		
+				WriteLog(rtrim(position));
 			}
 		}
 		else
 		{
-			while (token)
-			{
-				WriteLog(rtrim(token)); //get each image path
-				WriteLog(rtrim(token2)); //get each ocr result
+			wchar_t* position = _wcsdup((wchar_t*)szScanImageList);
+			wchar_t* position2 = _wcsdup((wchar_t*)szOCRResultList);
 
-				if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+			while ((token = wcsstr(position, delim)) != nullptr)
+			{
+				token2 = wcsstr(position2, delim);
+				*token = L'\0';
+				*token2 = L'\0';
+				WriteLog(rtrim(position));
+				WriteLog(rtrim(position2));
+
+				if (!wcsstr((wchar_t *)rtrim(position), L".pdf") && !wcsstr((wchar_t *)rtrim(position), L".tif") && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
 				{
-					vecImagePath.push_back(rtrim(token));
+					vecImagePath.push_back(rtrim(position));
 					SetTimer(vecImagePath.size(), 1, NULL);
 				}
-				token = wcstok_s(NULL, delim, &next_token);
-				token2 = wcstok_s(NULL, delim, &next_token2);
+				position = token + wcslen(delim);
+				position2 = token2 + wcslen(delim);
 			}
 		}
 	}
@@ -1169,34 +1180,38 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));   //get exception message
 		}
 
-		wchar_t* next_token, *next_token2;
+		wchar_t* token;
+		wchar_t* token2;
 		const wchar_t delim[] = L"|&|";
-		wchar_t* token = wcstok_s((wchar_t *)szScanImageList, delim, &next_token);
-		wchar_t* token2 = wcstok_s((wchar_t *)szOCRResultList, delim, &next_token2);
 
 		if (szCommand.Find(_T("\"rawdata\":true")) != -1)
 		{
-			while (token2)
+			wchar_t* position = _wcsdup((wchar_t*)szOCRResultList);
+			while ((token = wcsstr(position, delim)) != nullptr)
 			{
-				if (wcscmp((wchar_t *)rtrim(token2), L""))
-					WriteLog(rtrim(token2)); //get each ocr result
-				token2 = wcstok_s(NULL, delim, &next_token2);
+				*token = L'\0';			
+				WriteLog(rtrim(position));
 			}
 		}
 		else
 		{
-			while (token)
+			wchar_t* position = _wcsdup((wchar_t*)szScanImageList);
+			wchar_t* position2 = _wcsdup((wchar_t*)szOCRResultList);
+			while ((token = wcsstr(position, delim)) != nullptr)
 			{
-				WriteLog(rtrim(token)); //get each image path
-				WriteLog(rtrim(token2)); //get each ocr result
+				token2 = wcsstr(position2, delim);
+				*token = L'\0';
+				*token2 = L'\0';
+				WriteLog(rtrim(position));	
+				WriteLog(rtrim(position2));
 
-				if (!wcsstr((wchar_t *)rtrim(token), L".pdf") && !wcsstr((wchar_t *)rtrim(token), L".tif") && !wcsstr((wchar_t *)rtrim(token), L"CustomPhotoZone") && wcscmp((wchar_t *)rtrim(token), L""))
+				if (!wcsstr((wchar_t *)rtrim(position), L".pdf") && !wcsstr((wchar_t *)rtrim(position), L".tif") && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
 				{
-					vecImagePath.push_back(rtrim(token));
+					vecImagePath.push_back(rtrim(position));
 					SetTimer(vecImagePath.size(), 1, NULL);
 				}
-				token = wcstok_s(NULL, delim, &next_token);
-				token2 = wcstok_s(NULL, delim, &next_token2);
+				position = token + wcslen(delim);
+				position2 = token2 + wcslen(delim);
 			}
 		}
 	}
@@ -1218,6 +1233,43 @@ void CLibWFXDemoDlg_BlockMode::ShowScanningDlg(bool enableDlg)
 		m_ScanningDlg->EndDialog(0);
 		delete m_ScanningDlg;
 		m_ScanningDlg = NULL;
+		this->ShowWindow(SW_SHOW);
+	}
+}
+
+void CLibWFXDemoDlg_BlockMode::ShowDlg(bool enableDlg, wchar_t* szAction)
+{
+	if (enableDlg)
+	{
+		if (!wcscmp(szAction, L"Scan"))
+		{
+			m_ScanningDlg = new ScanningDlg();
+			m_ScanningDlg->Create(ScanningDlg::IDD, this);
+			m_ScanningDlg->ShowWindow(SW_SHOW);
+		}
+		else if (!wcscmp(szAction, L"Calibrate"))
+		{
+			m_CalibrationDlg = new CalibrationDlg();
+			m_CalibrationDlg->Create(CalibrationDlg::IDD, this);
+			m_CalibrationDlg->ShowWindow(SW_SHOW);
+		}
+		this->ShowWindow(SW_HIDE);
+	}
+	else
+	{
+		if (!wcscmp(szAction, L"Scan"))
+		{
+			m_ScanningDlg->EndDialog(0);
+			delete m_ScanningDlg;
+			m_ScanningDlg = NULL;
+		}
+		else if (!wcscmp(szAction, L"Calibrate"))
+		{
+			//m_CalibrationDlg->EndDialog(0);
+			m_CalibrationDlg->DestroyWindow();
+			delete m_CalibrationDlg;
+			m_CalibrationDlg = NULL;
+		}
 		this->ShowWindow(SW_SHOW);
 	}
 }
@@ -1255,8 +1307,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonMergepdf()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
@@ -1285,8 +1337,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonMergepdf()
 		if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 		{
 			CString szErr;
-			const wchar_t* szErrorMsg = NULL;
-			m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		}
@@ -1304,8 +1356,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonRecyclesavefolder()
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
 		CString szErr;
-		const wchar_t* szErrorMsg = NULL;
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, &szErrorMsg);
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
 		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 	}

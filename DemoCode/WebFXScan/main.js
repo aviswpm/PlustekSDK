@@ -65,7 +65,7 @@ $(document).ready(function () {
   // show recognize window
   $("#show-recognize").on("click", function (e) {
     const id = $(this).data("id");
-    const imageObj = imageData.imageCache[imageData.index - 1];
+    const imageObj = proxyImageData.imageCache[proxyImageData.index - 1];
     const { ocrText = "" } = imageObj;
     view.displayOcrTextWindow("Recognize Data", ocrText);
     e.stopPropagation();
@@ -87,11 +87,18 @@ $(document).ready(function () {
   $("#set-scanner-window .custom-set-scanner-window-button").on(
     "click",
     async function (e) {
+      let propertiesObj;
       try {
-        const propertiesObj = JSON.parse(
+        propertiesObj = JSON.parse(
           $("#set-scanner-window textarea").val()
         );
+      } catch (e) {
+        console.warn(e);
+        alert(`JSON parser error: ${ e.message}`);
+        return;
+      }
 
+      try {
         await updateServerProperty(propertiesObj, true);
         $("#set-scanner-window").addClass("d-none");
       } catch (e) {
@@ -159,22 +166,36 @@ $(document).ready(function () {
           return false;
         } else {
           obj[prop] = pageIndex;
-          view.showPic(imageData.imageCache[pageIndex - 1]);
+          view.showPic(obj.imageCache[pageIndex - 1]);
           view.updatePageIndex(pageIndex);
           return true;
         }
+      } else if (prop === "imageCache" && Array.isArray(value)) {
+        obj[prop] = value;
+        obj.total = value.length;
+        view.updatePageTotal(value.length);
+        return true;
       } else if (prop === "total") {
         const pageTotal = parseInt(value);
         view.updatePageTotal(pageTotal);
         obj[prop] = pageTotal;
         return true;
+      } else if (prop === "newImage") {
+        obj.imageCache.push(value);
+        obj.total = obj.imageCache.length;
+        obj.index = obj.imageCache.length;
+        view.updatePageTotal(obj.imageCache.length);
+        view.showPic(obj.imageCache[obj.imageCache.length - 1]);
+        view.updatePageIndex(obj.imageCache.length);
+        return true;
       }
+
       return false;
     },
     get: function (obj, prop) {
       // if prop exist
       if (prop in obj) {
-        return obj[prop];
+        return Reflect.get(obj, prop);
       } else {
         return `Property ${prop} does not exist.`;
       }
@@ -196,10 +217,10 @@ $(document).ready(function () {
       proxyImageData.total = total;
     },
     addImage: (fileObj) => {
-      imageData.imageCache.push(fileObj);
+      proxyImageData.newImage = fileObj;
     },
     clear: () => {
-      imageData.imageCache = [];
+      proxyImageData.imageCache = [];
       proxyImageData.total = 0;
       proxyImageData.index = 0;
     },
@@ -397,9 +418,12 @@ $(document).ready(function () {
       await MyScan.connect({ ip: "127.0.0.1", port: "17778" });
       await MyScan.setAutoScanCallback({
         callback: (file) => {
+          console.log(
+            proxyImageData.imageCache,
+            proxyImageData.total,
+            proxyImageData.index
+          );
           imageAction.addImage(file);
-          imageAction.updateTotal(1);
-          imageAction.to(1);
           view.displayLoadingMask(false);
         },
       });
@@ -458,7 +482,16 @@ $(document).ready(function () {
     const { recognizeType = "", ...otherParam } = globalParam.scannerConfig;
     const finalScannerConfig =
       recognizeType === "" ? otherParam : globalParam.scannerConfig;
-    await MyScan.setScanner(finalScannerConfig);
+    try {
+      await MyScan.setScanner(finalScannerConfig);
+    } catch (e) {
+      console.warn(e);
+      const { message = "unknown", error = 0 } = e;
+
+      alert(
+        `Scanner initialization error: ${(msg = error === 0 ? message : error)}`
+      );
+    }
   }
 
   // wrap lib to histroy log
@@ -494,7 +527,15 @@ $(document).ready(function () {
     instance[methodName] = async function (...args) {
       const log = { API: methodName, args: serialize(args) };
       view.addLogEntry(JSON.stringify(log), "up");
-      const result = await originalMethod.apply(this, args);
+      let result = {};
+      try {
+        result = await originalMethod.apply(this, args);
+      } catch (e) {
+        result = e;
+        const resultLog = { API: methodName, return: serialize(result) };
+        view.addLogEntry(JSON.stringify(resultLog), "down");
+        throw e;
+      }
       const resultLog = { API: methodName, return: serialize(result) };
       view.addLogEntry(JSON.stringify(resultLog), "down");
       return result;

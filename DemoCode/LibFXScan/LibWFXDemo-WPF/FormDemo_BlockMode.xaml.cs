@@ -23,6 +23,7 @@ namespace LibWFXDemo_CSharp
         ENUM_LIBWFX_ERRCODE m_enErrCode;       
         int m_nCount;
         FormScanning formScanning = null;
+        FormCalibration formCalibration = null;
         private List<String> m_szlistDevice;
         private List<String> m_szlistFile;
         private int m_MaxCMDItems;
@@ -112,7 +113,18 @@ namespace LibWFXDemo_CSharp
         [DllImport("kernel32.dll")]
         public static extern bool FreeLibrary(IntPtr hModule);
         private void FormDemo_FormClosing(object sender, CancelEventArgs e)
-        {                      
+        {
+            if (formScanning != null)
+            {              
+                formScanning.Close();
+                formScanning = null;
+            }
+            if (formCalibration != null)
+            {             
+                formCalibration.Close();
+                formCalibration = null;
+            }
+
             if (m_DeviceWrapper.hLibModule != IntPtr.Zero)
             {
                 m_DeviceWrapper.m_pfnLibWFX_CloseDevice();
@@ -166,7 +178,7 @@ namespace LibWFXDemo_CSharp
                 szDefJson += szDevName;
                 szDefJson += "\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}";
             }
-            else if (szDevName == "776U" || szDevName == "777U" || szDevName == "778U")
+            else if (szDevName == "776U" || szDevName == "777U" || szDevName == "778U" || szDevName == "FE7010_FE7011")
             {
                 szDefJson += "{\"device-name\":\"";
                 szDefJson += szDevName;
@@ -474,7 +486,9 @@ namespace LibWFXDemo_CSharp
                 return;
             }
 
+            ShowDlg(true, "Calibrate");
             m_enErrCode =m_DeviceWrapper.m_pfnLibWFX_Calibrate();
+            ShowDlg(false, "Calibrate");
 
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
@@ -669,17 +683,17 @@ namespace LibWFXDemo_CSharp
                 return;
             }
 
-            ShowScanningDlg(true);
+            ShowDlg(true, "Scan");
             m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_SynchronizeScan(command, out pScanImageList, out pOCRResultList, out pExceptionRet, out pEventRet);
-            ShowScanningDlg(false);
+            ShowDlg(false, "Scan");
 
             string szExceptionRet = Marshal.PtrToStringUni(pExceptionRet);
             string szEventRet = Marshal.PtrToStringUni(pEventRet);
 
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
-                IntPtr pstr;
-                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(m_enErrCode, out pstr);
+                IntPtr pstr = Marshal.AllocHGlobal(260);
+                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(m_enErrCode, pstr);
                 string szErrorMsg = Marshal.PtrToStringUni(pstr);
                 WriteLog(@"[ Warning ] " + szErrorMsg + " - [" + ((int)m_enErrCode).ToString() + "]"); //get fail message
             }
@@ -689,7 +703,7 @@ namespace LibWFXDemo_CSharp
                 WriteLog(@"Status:[Device Ready!]");
                 WriteLog(szEventRet);  //get event message
 
-                if (szEventRet != "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" && szEventRet != "LIBWFX_EVENT_UVSECURITY_DETECTED[1]" && szEventRet != "LIBWFX_EVENT_NO_PAPER")
+                if (szEventRet != "LIBWFX_EVENT_UVSECURITY_DETECTED[0]" && szEventRet != "LIBWFX_EVENT_UVSECURITY_DETECTED[1]")
                 {
                     WriteLog(@"Status:[Scan End]");
                     return;
@@ -705,7 +719,7 @@ namespace LibWFXDemo_CSharp
                     WriteLog(ScanImageWords[idx].Trim());  //get each image path
                     WriteLog(OCRResultWords[idx].Trim());  //get each ocr result
 
-                    if (!ScanImageWords[idx].Contains(".pdf") && !ScanImageWords[idx].Contains(".tif") && !ScanImageWords[idx].Equals("CustomPhotoZone") && ScanImageWords[idx].Trim() != String.Empty)
+                    if (!ScanImageWords[idx].Contains(".pdf") && !ScanImageWords[idx].Contains(".tif") && !ScanImageWords[idx].ToUpper().Contains("_PHOTO") && ScanImageWords[idx].Trim() != String.Empty)
                         DispatcherLoadImage(ScanImageWords[idx]);
                 }
             }
@@ -729,25 +743,44 @@ namespace LibWFXDemo_CSharp
                     WriteLog(ScanImageWords[idx].Trim());  //get each image path
                     WriteLog(OCRResultWords[idx].Trim());  //get each ocr result
 
-                    if (!ScanImageWords[idx].Contains(".pdf") && !ScanImageWords[idx].Contains(".tif") && !ScanImageWords[idx].Equals("CustomPhotoZone") && ScanImageWords[idx].Trim() != String.Empty)
+                    if (!ScanImageWords[idx].Contains(".pdf") && !ScanImageWords[idx].Contains(".tif") && !ScanImageWords[idx].ToUpper().Contains("_PHOTO") && ScanImageWords[idx].Trim() != String.Empty)
                         DispatcherLoadImage(ScanImageWords[idx]);
                 }
             }
             WriteLog(@"Status:[Scan End]");
         }
 
-        private void ShowScanningDlg(bool enableDlg)
+        private void ShowDlg(bool enableDlg, string szAction)
         {
             if (enableDlg)
             {
-                formScanning = new FormScanning();
-                formScanning.Show();
                 this.Hide();
+                if (szAction == "Scan")
+                {
+                    formScanning = new FormScanning();
+                    formScanning.Show();
+                    formScanning.Focus();
+                }
+                else if (szAction == "Calibrate")
+                {
+                    formCalibration = new FormCalibration();
+                    formCalibration.Show();
+                    formCalibration.Focus();
+                }
+
             }
-            else if (formScanning != null)
+            else
             {
-                formScanning.Close();
-                formScanning = null;
+                if (szAction == "Scan" && formScanning != null)
+                {
+                    formScanning.Close();
+                    formScanning = null;
+                }
+                else if (szAction == "Calibrate" && formCalibration != null)
+                {
+                    formCalibration.Close();
+                    formCalibration = null;
+                }
                 this.Show();
             }
         }

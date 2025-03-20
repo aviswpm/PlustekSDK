@@ -1,6 +1,7 @@
 #pragma once
 #include "..\inc\LibWebFXScan\LibWebFXScan.h"
 #include "ScanningDlg.h"
+#include "CalibrationDlg.h"
 #include <string>
 #include <mutex>
 #include "afxwin.h"
@@ -53,6 +54,7 @@ private:
 	int                       m_nWarmupTotalTime;
 	int						  m_nCmdMaxNum;
 	ScanningDlg*              m_ScanningDlg;
+	CalibrationDlg*			  m_CalibrationDlg;
 	
 	BOOL InitLib(VOID);
 	BOOL InitDevicesList(VOID);
@@ -64,6 +66,7 @@ private:
 	wchar_t* rtrim(wchar_t *str);
 	void GetCertificatePermission();	
 	void ShowScanningDlg(bool enableDlg);
+	void ShowDlg(bool enableDlg, wchar_t* szAction);
 	BOOL GetSDKInstallPath(TCHAR* szInstallPath, bool bIsSDKInstallPath);
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

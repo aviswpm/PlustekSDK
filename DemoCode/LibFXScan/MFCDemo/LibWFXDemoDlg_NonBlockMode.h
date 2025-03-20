@@ -1,6 +1,7 @@
 #pragma once
 #include "..\inc\LibWebFXScan\LibWebFXScan.h"
 #include "WarmupDlg.h"
+#include "CalibrationDlg.h"
 #include <string>
 #include "afxwin.h"
 #define WM_LIBWFX_BEGIN				 WM_USER + 1000
@@ -63,7 +64,7 @@ private:
 	int                       m_nWarmupTotalTime;
 	int						  m_nCmdMaxNum;
 	WarmupDlg*                m_dlgWarmup;
-
+	CalibrationDlg*			  m_CalibrationDlg;
 
 	static void LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCode, int nParam, void* pUserDef);
 	static void LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode, void* pUserDef, void* pParam1, void* pParam2);
@@ -78,6 +79,7 @@ private:
 	wchar_t* rtrim(wchar_t *str);
 	void GetCertificatePermission();
 	BOOL GetSDKInstallPath(TCHAR* szInstallPath, bool bIsSDKInstallPath);
+	void ShowCalibrateDlg(bool enableDlg);
 
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support

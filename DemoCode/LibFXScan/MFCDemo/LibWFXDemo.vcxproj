@@ -215,6 +215,7 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CalibrationDlg.h" />
     <ClInclude Include="ECODlg.h" />
     <ClInclude Include="LibWFXDemo.h" />
     <ClInclude Include="LibWFXDemoDlg_BlockMode.h" />
@@ -226,6 +227,7 @@
     <ClInclude Include="WarmupDlg.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="CalibrationDlg.cpp" />
     <ClCompile Include="ECODlg.cpp" />
     <ClCompile Include="LibWFXDemo.cpp" />
     <ClCompile Include="LibWFXDemoDlg_BlockMode.cpp" />

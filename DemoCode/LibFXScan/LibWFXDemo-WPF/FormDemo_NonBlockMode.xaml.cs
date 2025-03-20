@@ -22,6 +22,7 @@ namespace LibWFXDemo_CSharp
     {
         ENUM_LIBWFX_ERRCODE m_enErrCode;
         DeviceWrapper m_DeviceWrapper = new DeviceWrapper();
+        FormCalibration formCalibration = null;
         static DeviceWrapper.LIBWFXEVENTCB m_CBEvent;
         static DeviceWrapper.LIBWFXCB m_CBNotify;
         int m_nCount;
@@ -97,7 +98,7 @@ namespace LibWFXDemo_CSharp
                             return;
 
                         form.DispatcherWriteLog(szPath);
-                        if (!szPath.Contains(".pdf") && !szPath.Contains(".tif") && !szPath.Equals("CustomPhotoZone"))
+                        if (!szPath.Contains(".pdf") && !szPath.Contains(".tif") && !szPath.ToUpper().Contains("_PHOTO"))
                         {
                             form.DispatcherLoadImage(szPath);
                         }
@@ -371,7 +372,7 @@ namespace LibWFXDemo_CSharp
                 szDefJson += szDevName;
                 szDefJson += "\",\"source\":\"Sheetfed-Duplex\",\"autoscan\":true,\"recognize-type\":\"passport\"}";
             }
-            else if (szDevName == "776U" || szDevName == "777U" || szDevName == "778U")
+            else if (szDevName == "776U" || szDevName == "777U" || szDevName == "778U" || szDevName == "FE7010_FE7011")
             {
                 szDefJson += "{\"device-name\":\"";
                 szDefJson += szDevName;
@@ -651,8 +652,8 @@ namespace LibWFXDemo_CSharp
 
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
-                IntPtr pstr;
-                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(m_enErrCode, out pstr);
+                IntPtr pstr = Marshal.AllocHGlobal(260);
+                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(m_enErrCode, pstr);
                 string szErrorMsg = Marshal.PtrToStringUni(pstr);
                 DispatcherWriteLog(@"[ Warning ] " + szErrorMsg + " - [" + ((int)m_enErrCode).ToString() + "]");
             }
@@ -741,7 +742,9 @@ namespace LibWFXDemo_CSharp
                 return;
             }
 
+            ShowCalibrateDlg(true);
             m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_Calibrate();
+            ShowCalibrateDlg(false);
 
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
@@ -933,6 +936,23 @@ namespace LibWFXDemo_CSharp
             catch (System.Exception exception)
             {
                 System.Console.WriteLine("An error occurred: " + exception.Message);
+            }
+        }
+
+        private void ShowCalibrateDlg(bool enableDlg)
+        {
+            if (enableDlg)
+            {
+                this.Hide();
+                formCalibration = new FormCalibration();
+                formCalibration.Show();
+                formCalibration.Focus();
+            }
+            else if (formCalibration != null)
+            {              
+                formCalibration.Close();
+                formCalibration = null;         
+                this.Show();
             }
         }
     }    
