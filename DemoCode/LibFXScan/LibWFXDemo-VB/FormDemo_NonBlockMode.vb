@@ -10,7 +10,7 @@ Imports System.Boolean
 Public Class FormDemo_NonBlockMode
     Dim m_DeviceWrapper As DeviceWrapper = New DeviceWrapper()
     Dim m_warmupForm As FormWarmup
-    Dim m_calibrationForm As FormCalibration
+    Dim m_waitmsgForm As FormWaitMsg
     Dim m_nWarmupTotalTime As Integer = 0
     Dim m_nCount As Integer = 0
     Dim m_CBEvent As DeviceWrapper.LIBWFXEVENTCB
@@ -182,8 +182,8 @@ Public Class FormDemo_NonBlockMode
             Me.Close()
             Return
         End If
+        ShowDlg(True, "Init")
         Dim enRet As ENUM_LIBWFX_ERRCODE
-        m_calibrationForm = New FormCalibration
         REM Init LibWFXScan Variable
         m_CBEvent = AddressOf LibWFXCallBack_Event
         m_CBNotify = AddressOf LibWFXCallBack_Notify
@@ -203,7 +203,6 @@ Public Class FormDemo_NonBlockMode
 #Else
             enRet = m_DeviceWrapper.m_pfnLibWFX_InitEx(ENUM_LIBWFX_INIT_MODE.LIBWFX_INIT_MODE_NORMAL)
 #End If
-
             If enRet = ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
                 BTN_REFRESH_Click(Nothing, Nothing)
                 WriteLog("Status:[LibWFX_InitEx Success]")
@@ -227,6 +226,7 @@ Public Class FormDemo_NonBlockMode
                 WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
             End If
         End If
+        ShowDlg(False, "Init")
     End Sub
 
     Private Sub MainForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
@@ -341,7 +341,7 @@ Public Class FormDemo_NonBlockMode
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex""}"
-        ElseIf szDevName = "74RU" Or szDevName = "74BU" Or szDevName = "7P1U" Or szDevName = "M11U" Or szDevName = "7B3U" Or szDevName = "M12U" Then
+        ElseIf szDevName = "74RU" Or szDevName = "74BU" Or szDevName = "7P1U" Or szDevName = "M11U" Or szDevName = "7B3U" Or szDevName = "M12U" Or szDevName = "FE5020" Then
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Front"",""autoscan"":true}"
@@ -440,9 +440,14 @@ Public Class FormDemo_NonBlockMode
             Return
         End If
 
-        ShowCalibrateDlg(True)
+        If szDevName = "A64" Then
+            ShowDlg(True, "Calibrate_xmini")
+        Else
+            ShowDlg(True, "Calibrate_normal")
+        End If
         enRet = m_DeviceWrapper.m_pfnLibWFX_Calibrate()
-        ShowCalibrateDlg(False)
+        ShowDlg(False, "")
+
         If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
             WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
         Else
@@ -585,7 +590,7 @@ Public Class FormDemo_NonBlockMode
         If System.IO.File.Exists("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt") = True Then
             Dim objStreamReader As StreamReader
 
-            objStreamReader = New StreamReader("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt")
+            objStreamReader = New StreamReader("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt", Encoding.Default)
             COMBO_COMMAND.Items.Clear()
             Dim line As String = ""
             Dim idx As Integer = 0
@@ -625,7 +630,7 @@ Public Class FormDemo_NonBlockMode
             Dim objStreamWriter As StreamWriter
             Dim commandLists As New ArrayList
 
-            objStreamWriter = New StreamWriter("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt")
+            objStreamWriter = New StreamWriter("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt", False, Encoding.Default)
             commandLists.Add(szCommand)
             objStreamWriter.WriteLine(szCommand)
             COMBO_COMMAND.SelectedIndex = 0
@@ -746,7 +751,7 @@ Public Class FormDemo_NonBlockMode
         Dim enRet As ENUM_LIBWFX_ERRCODE
         Dim OpenFileDialog1 As OpenFileDialog = New OpenFileDialog
         OpenFileDialog1.CheckFileExists = True
-        OpenFileDialog1.Filter = "Images (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG|" + "All files (*.*)|*.*"
+        OpenFileDialog1.Filter = "Image Files (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG||"
         OpenFileDialog1.Multiselect = True
         OpenFileDialog1.ShowDialog()
 
@@ -773,15 +778,19 @@ Public Class FormDemo_NonBlockMode
             Console.WriteLine("An error occurred: " & ex.Message)
         End Try
     End Sub
-    Private Sub ShowCalibrateDlg(ByVal enableDlg As Boolean)
+    Private Sub ShowDlg(ByVal enableDlg As Boolean, ByVal szAction As String)
         If enableDlg Then
-            m_calibrationForm.Show()
-            m_calibrationForm.Refresh()
+            m_waitmsgForm = New FormWaitMsg(szAction)
+            m_waitmsgForm.Show()
+            m_waitmsgForm.Refresh()
             Me.Hide()
             Me.Refresh()
         Else
-            m_calibrationForm.Hide()
-            m_calibrationForm.Refresh()
+            If m_waitmsgForm IsNot Nothing Then
+                m_waitmsgForm.Close()
+                m_waitmsgForm = Nothing
+            End If
+
             Me.Show()
             Me.Refresh()
         End If

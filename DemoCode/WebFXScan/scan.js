@@ -420,6 +420,9 @@ class WebFxScanScanner {
     paperOrientation: { type: "string", value: "paper-orientation" },
     ciphersnBase64key: { type: "string", value: "ciphersn-base64key" },
     ciphersnCompanykey: { type: "string", value: "ciphersn-companykey" },
+    scanSpeed: { type: "string", value: "scan-speed" },
+    fejectSpeed: { type: "string", value: "feject-speed" },
+    bejectSpeed: { type: "string", value: "beject-speed" },
   };
 
   // Get all properties except for interfaceTable.
@@ -451,11 +454,7 @@ class WebFxScanScanner {
 
     // In webFXScan 2.0, when scanning, this parameter must be present to return base64. It will be used by default in typical scenarios.
     fixParamObj = { ...fixParamObj, base64enc: true };
-    // compatible with sdk lib param
-    Object.entries(self.interfaceTable).map((propertyItem) => {
-      const serverLibProperty = propertyItem[1].value;
-      self.interfaceTable[serverLibProperty] = propertyItem[1];
-    });
+    // Check alias
     Object.keys(fixParamObj).forEach(function (key) {
       if (key in self.interfaceTable) {
         const fixedKey = self.interfaceTable[key].value;
@@ -470,8 +469,10 @@ class WebFxScanScanner {
             ? String(targetValue)
             : targetValue;
         newParamObj[fixedKey] = fixedValue;
+      } else {
+        // Unsupported alias inputs will be continue.
+        newParamObj[key] = fixParamObj[key]
       }
-      // Unsupported inputs will be skipped.
     });
     return newParamObj;
   }
@@ -533,21 +534,29 @@ class WebFxScanUtility {
       console.warn("sdkV2MessageParser error:", error);
     }
 
+    function isJsonLikeString(str) {
+      return (
+        (str.startsWith("{") && str.endsWith("}")) ||
+        (str.startsWith("[") && str.endsWith("]"))
+      );
+    }
+
     function traverseObject(obj) {
       let result = obj;
       for (let key in result) {
         if (typeof result[key] === "string") {
-          try {
-            const tempVar = JSON.parse(result[key]);
-            result[key] = tempVar;
-            if (typeof tempVar === "object") traverseObject(tempVar);
-          } catch (error) {
-            // skip
+          const value = result[key].trim();
+          if (isJsonLikeString(value)) {
+            try {
+              const tempVar = JSON.parse(value);
+              result[key] = tempVar;
+              if (typeof tempVar === "object") traverseObject(tempVar);
+            } catch (error) {
+              // skip
+            }
           }
-        } else if (typeof result[key] === "object") {
+        } else if (typeof result[key] === "object" && result[key] !== null) {
           traverseObject(result[key]);
-        } else {
-          // ingore other type
         }
       }
       return result;
@@ -590,7 +599,7 @@ class WebFxScanServer {
     this.state.mode = mode;
   }
 
-  version = "1.1.8.25064";
+  version = "1.1.9.25224";
   state = {
     socket: null,
     ip: "",
@@ -768,6 +777,16 @@ class WebFxScanServer {
       receive: [{ type: "return", func: "LibWFX_EjectPaperControl" }],
       method: this.ejectPaper,
       callback: this.callbackEjectPaper,
+      promise: null,
+      isActive: false,
+      timeoutId: null,
+      timeout: null,
+    },
+    getPaperStatus: {
+      command: { type: "call", func: "LibWFX_GetPaperStatus" },
+      receive: [{ type: "return", func: "LibWFX_GetPaperStatus" }],
+      method: this.getPaperStatus,
+      callback: this.callbackGetPaperStatus,
       promise: null,
       isActive: false,
       timeoutId: null,
@@ -1908,7 +1927,7 @@ class WebFxScanServer {
   async scan(props) {
     const {
       callback = null,
-      eventCallback = (null),
+      eventCallback = null,
       timeout,
       hideBase64,
     } = props;
@@ -1945,9 +1964,20 @@ class WebFxScanServer {
           self.cache.autoScanCallback({
             fileName: fullName,
             base64: fixedBase64,
-            ocrText: recognizedata,
-            md5,
-          });
+            ocrText: recognizedata
+          }, err_code);
+        }
+
+        if (
+          err_code !== 0 &&
+          !apiItem.isActive
+        ) {
+          self.devLog("[ScanLib] autoScanCallback failed trigger.");
+          self.cache.autoScanCallback({
+            fileName: "",
+            base64: "",
+            ocrText: ""
+          }, err_code);
         }
       }
 
@@ -2405,6 +2435,49 @@ class WebFxScanServer {
       );
     }
   }
+
+  // API: getPaperStatus
+  getPaperStatus() {
+    const self = this;
+    return self.notify("getPaperStatus");
+  }
+
+  callbackGetPaperStatus(self, fixData) {
+    const apiItem = this;
+    try {
+      const { type, func, data } = fixData;
+      const { err_code = 0, message = "" } = data;
+
+      if (err_code === 0) {
+        self.promiseResolve(
+          apiItem,
+          WebFxScanUtility.successResponse({
+            message: "OK",
+            data: { message },
+            apiItem,
+          })
+        );
+      } else {
+        self.promiseReject(
+          apiItem,
+          WebFxScanUtility.failureResponse({
+            errCode: err_code,
+            message,
+            apiItem,
+          })
+        );
+      }
+    } catch (error) {
+      self.promiseReject(
+        apiItem,
+        WebFxScanUtility.failureResponse({
+          errCode: 9999,
+          message: error,
+          apiItem,
+        })
+      );
+    }
+  }
 }
 
 // *********************
@@ -2573,6 +2646,10 @@ class WebFxScan {
       });
     }
     return this.serverInstance.ejectPaper({ isBackward });
+  }
+
+  getPaperStatus() {
+    return this.serverInstance.getPaperStatus();
   }
 }
 

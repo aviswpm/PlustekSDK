@@ -2,6 +2,8 @@
 #include "..\inc\LibWebFXScan\LibWebFXScan.h"
 #include "ScanningDlg.h"
 #include "CalibrationDlg.h"
+#include "CalibrationXminiDlg.h"
+#include "InitDlg.h"
 #include <string>
 #include <mutex>
 #include "afxwin.h"
@@ -55,7 +57,11 @@ private:
 	int						  m_nCmdMaxNum;
 	ScanningDlg*              m_ScanningDlg;
 	CalibrationDlg*			  m_CalibrationDlg;
-	
+	CalibrationXminiDlg*      m_CalibrationXminiDlg;
+	InitDlg*				  m_InitDlg;
+	typedef BOOL(WINAPI *LPFN_ISWOW64PROCESS) (HANDLE, PBOOL);
+	LPFN_ISWOW64PROCESS fnIsWow64Process;
+
 	BOOL InitLib(VOID);
 	BOOL InitDevicesList(VOID);
 	BOOL WriteLog(TCHAR* szMsg);
@@ -64,10 +70,10 @@ private:
 	BOOL GetCommandString(wchar_t* DevName);
 	BOOL SetCommandString(wchar_t* DevName, CString Command);
 	wchar_t* rtrim(wchar_t *str);
-	void GetCertificatePermission();	
-	void ShowScanningDlg(bool enableDlg);
+	void GetCertificatePermission();
 	void ShowDlg(bool enableDlg, wchar_t* szAction);
 	BOOL GetSDKInstallPath(TCHAR* szInstallPath, bool bIsSDKInstallPath);
+	BOOL IsWow64Process();
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	HICON m_hIcon;

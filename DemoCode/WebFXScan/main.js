@@ -1,4 +1,5 @@
 $(document).ready(function () {
+  const isDebug = false;
   /*** Events ***/
   // send scan command to server
   $("#scan").on("click", async function () {
@@ -89,12 +90,10 @@ $(document).ready(function () {
     async function (e) {
       let propertiesObj;
       try {
-        propertiesObj = JSON.parse(
-          $("#set-scanner-window textarea").val()
-        );
+        propertiesObj = JSON.parse($("#set-scanner-window textarea").val());
       } catch (e) {
         console.warn(e);
-        alert(`JSON parser error: ${ e.message}`);
+        alert(`JSON parser error: ${e.message}`);
         return;
       }
 
@@ -113,6 +112,12 @@ $(document).ready(function () {
   $("#clear-message").on("click", function (e) {
     logger.clear();
     view.clearMessage();
+  });
+
+  // clear all message
+  $("#test").on("click", async function (e) {
+    const testData = await MyScan.getPaperStatus();
+    console.log(testData);
   });
 
   // close ocr text modal
@@ -237,7 +242,7 @@ $(document).ready(function () {
     },
     recognizeTypeOpts: [
       "twid",
-      "chid",
+      "cnid",
       "egid",
       "maid",
       "vnid",
@@ -285,6 +290,11 @@ $(document).ready(function () {
 
   /*** UI functions ***/
   const view = {
+    debugMode(isDebug) {
+      if (isDebug) {
+        $("#test").removeClass("d-none");
+      }
+    },
     showPic(file) {
       const { fileName, base64, ocrText } = file;
       $("#sample-bg").addClass("d-none");
@@ -407,6 +417,7 @@ $(document).ready(function () {
   /*** General function ***/
   async function init() {
     try {
+      view.debugMode(isDebug);
       // display information
       view.disableForm(true);
       // update recognize select
@@ -417,13 +428,10 @@ $(document).ready(function () {
       // connect server
       await MyScan.connect({ ip: "127.0.0.1", port: "17778" });
       await MyScan.setAutoScanCallback({
-        callback: (file) => {
-          console.log(
-            proxyImageData.imageCache,
-            proxyImageData.total,
-            proxyImageData.index
-          );
-          imageAction.addImage(file);
+        callback: (file, errCode) => {
+          if(errCode === 0) {
+            imageAction.addImage(file);
+          }
           view.displayLoadingMask(false);
         },
       });

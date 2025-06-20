@@ -54,6 +54,7 @@ public enum ENUM_LIBWFX_ERRCODE
     LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
     LIBWFX_ERRCODE_SPECIFIC_AP_OPENING,         /**< The unauthorized program is running */
     LIBWFX_ERRCODE_PARM_VALUE_MISMATCH,         /**< Undefined parameter value appears in command */
+    LIBWFX_ERRCODE_INVALID_FILE_FORMAT,         /**< Only image files(JPG, BMP, PNG) are allowed When Using "MergePdf" */
 }
 
 public enum ENUM_LIBWFX_EVENT_CODE

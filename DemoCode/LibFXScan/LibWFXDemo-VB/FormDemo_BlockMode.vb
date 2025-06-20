@@ -4,12 +4,12 @@ Imports Newtonsoft.Json
 Imports System.IO
 Imports System.Boolean
 Imports System.Threading
+Imports System.Text
 
 
 Public Class FormDemo_BlockMode
     Dim m_DeviceWrapper As DeviceWrapper = New DeviceWrapper()
-    Dim m_scanningForm As FormScanning
-    Dim m_calibrationForm As FormCalibration
+    Dim m_waitmsgForm As FormWaitMsg
     Dim m_nCount As Integer = 1
     Dim m_MaxCMDItems As Integer = 5
 
@@ -39,10 +39,8 @@ Public Class FormDemo_BlockMode
             Me.Close()
             Return
         End If
-
+        ShowDlg(True, "Init")
         Dim enRet As ENUM_LIBWFX_ERRCODE
-        m_scanningForm = New FormScanning
-        m_calibrationForm = New FormCalibration
         REM Init LibWFXScan Library
         REM enRet = DeviceWrapper.LibWFX_Init()
         REM since we can't debug OCR engine, for debuging UI flow, use LIBWFX_INIT_MODE_NOOCR
@@ -81,6 +79,7 @@ Public Class FormDemo_BlockMode
                 WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
             End If
         End If
+        ShowDlg(False, "Init")
     End Sub
 
     Private Sub MainForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
@@ -185,7 +184,7 @@ Public Class FormDemo_BlockMode
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Duplex""}"
-        ElseIf szDevName = "74RU" Or szDevName = "74BU" Or szDevName = "7P1U" Or szDevName = "M11U" Or szDevName = "7B3U" Or szDevName = "M12U" Then
+        ElseIf szDevName = "74RU" Or szDevName = "74BU" Or szDevName = "7P1U" Or szDevName = "M11U" Or szDevName = "7B3U" Or szDevName = "M12U" Or szDevName = "FE5020" Then
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
             szDefJson += """,""source"":""Sheetfed-Front""}"
@@ -311,9 +310,14 @@ Public Class FormDemo_BlockMode
             Return
         End If
 
-        ShowDlg(True, "Calibrate")
+        If szDevName = "A64" Then
+            ShowDlg(True, "Calibrate_xmini")
+        Else
+            ShowDlg(True, "Calibrate_normal")
+        End If
         enRet = m_DeviceWrapper.m_pfnLibWFX_Calibrate()
-        ShowDlg(False, "Calibrate")
+        ShowDlg(False, "")
+
         If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
             WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
         Else
@@ -404,7 +408,7 @@ Public Class FormDemo_BlockMode
         If System.IO.File.Exists("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt") = True Then
             Dim objStreamReader As StreamReader
 
-            objStreamReader = New StreamReader("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt")
+            objStreamReader = New StreamReader("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt", Encoding.Default)
             COMBO_COMMAND.Items.Clear()
             Dim line As String = ""
             Dim idx As Integer = 0
@@ -444,7 +448,7 @@ Public Class FormDemo_BlockMode
             Dim objStreamWriter As StreamWriter
             Dim commandLists As New ArrayList
 
-            objStreamWriter = New StreamWriter("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt")
+            objStreamWriter = New StreamWriter("C:\\ProgramData\\Plustek\\" + szDevice + "\\Command.txt", False, Encoding.Default)
             commandLists.Add(szCommand)
             objStreamWriter.WriteLine(szCommand)
             COMBO_COMMAND.SelectedIndex = 0
@@ -667,25 +671,17 @@ Public Class FormDemo_BlockMode
 
     Private Sub ShowDlg(ByVal enableDlg As Boolean, ByVal szAction As String)
         If enableDlg Then
-            If szAction = "Scan" Then
-                m_calibrationForm.Hide()
-                m_scanningForm.Show()
-                m_scanningForm.Refresh()
-            ElseIf szAction = "Calibrate" Then
-                m_scanningForm.Hide()
-                m_calibrationForm.Show()
-                m_calibrationForm.Refresh()
-            End If
+            m_waitmsgForm = New FormWaitMsg(szAction)
+            m_waitmsgForm.Show()
+            m_waitmsgForm.Refresh()
             Me.Hide()
             Me.Refresh()
         Else
-            If szAction = "Scan" Then
-                m_scanningForm.Hide()
-                m_scanningForm.Refresh()
-            ElseIf szAction = "Calibrate" Then
-                m_calibrationForm.Hide()
-                m_calibrationForm.Refresh()
+            If m_waitmsgForm IsNot Nothing Then
+                m_waitmsgForm.Close()
+                m_waitmsgForm = Nothing
             End If
+
             Me.Show()
             Me.Refresh()
         End If
@@ -705,7 +701,7 @@ Public Class FormDemo_BlockMode
         Dim enRet As ENUM_LIBWFX_ERRCODE
         Dim OpenFileDialog1 As OpenFileDialog = New OpenFileDialog
         OpenFileDialog1.CheckFileExists = True
-        OpenFileDialog1.Filter = "Images (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG|" + "All files (*.*)|*.*"
+        OpenFileDialog1.Filter = "Image Files (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG||"
         OpenFileDialog1.Multiselect = True
         OpenFileDialog1.ShowDialog()
 

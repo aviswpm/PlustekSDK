@@ -1,0 +1,18 @@
+﻿<Window x:Class="LibWFXDemo_CSharp.FormWaitMsg"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LibWFXDemo_CSharp"
+        mc:Ignorable="d" Height="112.374" Width="300" ShowInTaskbar="False" ResizeMode="NoResize" WindowStyle="None" WindowStartupLocation="CenterScreen" Topmost="True">
+    <Grid>
+        <Label x:Name="label_scan" Content="Scanning...Please wait" HorizontalAlignment="Left" Margin="66,44,0,0" VerticalAlignment="Top" FontSize="16"/>
+        <Label x:Name="label_cal_normal_1" Content="Calibration in progress..." HorizontalAlignment="Left" Margin="57,19,0,0" VerticalAlignment="Top" FontSize="16"/>
+        <Label x:Name="label_cal_normal_2" Content="Please wait 3~40 seconds" HorizontalAlignment="Left" Margin="52,58,0,0" VerticalAlignment="Top" FontSize="16"/>
+        <Label x:Name="label_cal_xmini" HorizontalAlignment="Left" Margin="6,29,-306,0" VerticalAlignment="Top" FontSize="16" Height="66" Width="550">
+            <TextBlock Text="Note: The calibration process may take up to 40 seconds to complete. During this time, you may hear beeps."
+                       TextWrapping="Wrap" />
+        </Label>
+        <Label x:Name="label_init" Content="Init...Please wait" HorizontalAlignment="Left" Margin="84,44,0,0" VerticalAlignment="Top" FontSize="16"/>
+    </Grid>
+</Window>

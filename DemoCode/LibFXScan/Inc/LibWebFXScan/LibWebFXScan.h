@@ -85,7 +85,8 @@ typedef enum _ENUM_LIBWFX_ERRCODE
 	LIBWFX_ERRCODE_TIMEOUT,                     /**< Timeout error */
 	LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
 	LIBWFX_ERRCODE_SPECIFIC_AP_OPENING,         /**< The unauthorized program is running */
-	LIBWFX_ERRCODE_PARM_VALUE_MISMATCH          /**< Undefined parameter value appears in command */
+	LIBWFX_ERRCODE_PARM_VALUE_MISMATCH,         /**< Undefined parameter value appears in command */
+	LIBWFX_ERRCODE_INVALID_FILE_FORMAT			/**< Only image files(JPG, BMP, PNG) are allowed when using "MergePdf" */
 } ENUM_LIBWFX_ERRCODE;
 
 typedef enum _ENUM_LIBWFX_EVENT_CODE

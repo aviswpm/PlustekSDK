@@ -75,6 +75,7 @@ Public Class DeviceWrapper
         LIBWFX_ERRCODE_SERVER_OCCUPIED = 1014           REM *< Server has been occupied by other connections
         LIBWFX_ERRCODE_SPECIFIC_AP_OPENING = 1015       REM *< The unauthorized program is running
         LIBWFX_ERRCODE_PARM_VALUE_MISMATCH = 1016       REM *< Undefined parameter value appears in command
+        LIBWFX_ERRCODE_INVALID_FILE_FORMAT = 1017       REM *< Only image files(JPG, BMP, PNG) are allowed When Using "MergePdf"
     End Enum
 
     Public Enum ENUM_LIBWFX_EVENT_CODE
@@ -276,7 +277,7 @@ Public Class DeviceWrapper
             Dim valuelib As Object = Registry.GetValue(keyNameLib, "InstallLocation", "")
             Dim valuesdk As Object = Registry.GetValue(keyNameSDK, "InstallLocation", "")
 
-            If valuelib IsNot Nothing Then
+            If valuelib IsNot Nothing And valuesdk IsNot Nothing Then
                 szPath = valuelib.ToString()
                 m_szSdkInstallPath = valuesdk.ToString()
                 System.IO.Directory.SetCurrentDirectory(valuelib.ToString())

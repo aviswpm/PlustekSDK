@@ -1,4 +1,27 @@
 # Release Note
+# **[GitHub - Version 2.0.7]**
+
+>## PlustekSDK_LDSetup_25243_x64 | PlustekSDK_LDSetup_25243_x86
+### AviScanProcess - *v1.0.1.25243*
+### WebFXScan2  - *v2.1.21.25243*
+- **Added**
+  - Support multiple recognize
+  - VTM300 speed ​​related parameters
+- **Update**
+  - Camera.ini for Crop to start in (0,0)
+  - Optimize shading
+  - Calibration alert message
+  - Initial stage alert message
+  - Optimize recognize result
+
+- **Fixed**
+  - The First set slow issue
+  - Autoscan issue
+  
+>## DemoCode
+### LibFXScan
+- **Added**
+  - Java demo 
 
 # **[GitHub - Version 2.0.6]**
 

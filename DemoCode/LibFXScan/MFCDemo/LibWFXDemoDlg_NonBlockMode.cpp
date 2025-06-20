@@ -36,6 +36,8 @@ CLibWFXDemoDlg_NonBlockMode::CLibWFXDemoDlg_NonBlockMode(CWnd* pParent /*=NULL*/
 	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 	m_dlgWarmup = NULL;
 	m_CalibrationDlg = NULL;
+	m_CalibrationXminiDlg = NULL;
+	m_InitDlg = NULL;
 }
 
 CLibWFXDemoDlg_NonBlockMode::~CLibWFXDemoDlg_NonBlockMode()
@@ -280,18 +282,29 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 
 BOOL CLibWFXDemoDlg_NonBlockMode::InitLib(VOID)
 {	
-	m_hLibWFX = ::LoadLibrary(LIBWFX_DLLNAME);
+	TCHAR szExeDirPath[AVI_MAXPATH_LEN] = { 0 };
+	DWORD dwLen = GetModuleFileName(NULL, szExeDirPath, AVI_MAXPATH_LEN);
+	while (dwLen-- > 0) {
+		if (szExeDirPath[dwLen] == _T('\\')) {
+			szExeDirPath[dwLen + 1] = 0;
+			break;
+		}
+	}
+	TCHAR szDLLPath[AVI_MAXPATH_LEN + 1];
+	_stprintf_s(szDLLPath, _T("%s%s"), szExeDirPath, LIBWFX_DLLNAME);
+	m_hLibWFX = LoadLibraryEx(szDLLPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
+
 	if (m_hLibWFX == NULL)
 	{
-		TCHAR szDLLPath[AVI_MAXPATH_LEN] = {0};
-		if (GetSDKInstallPath(szDLLPath, false))
+		TCHAR szSDKDLLPath[AVI_MAXPATH_LEN] = {0};
+		if (GetSDKInstallPath(szSDKDLLPath, false))
 		{
-			if (szDLLPath[_tcslen(szDLLPath) - 1] != _T('\\'))
+			if (szDLLPath[_tcslen(szSDKDLLPath) - 1] != _T('\\'))
 			{
-				_tcscat_s(szDLLPath, _T("\\"));
+				_tcscat_s(szSDKDLLPath, _T("\\"));
 			}
-			_tcscat_s(szDLLPath, LIBWFX_DLLNAME);
-			m_hLibWFX = ::LoadLibrary(szDLLPath);
+			_tcscat_s(szSDKDLLPath, LIBWFX_DLLNAME);
+			m_hLibWFX = ::LoadLibrary(szSDKDLLPath);
 		}
 	}
 
@@ -482,12 +495,14 @@ BOOL CLibWFXDemoDlg_NonBlockMode::WriteLog(TCHAR* szMsg)
 	szContent.Append(szMsg);
 	szContent.Append(_T("\r\n"));
 	GetDlgItem(IDC_EDIT_LOG)->SetWindowText(szContent);
-
 	((CEdit *)GetDlgItem(IDC_EDIT_LOG))->LineScroll(((CEdit *)GetDlgItem(IDC_EDIT_LOG))->GetLineCount());
-	CString szContent2;
-	szContent2.Append(szMsg);
-	szContent2.Append(_T("\r\n"));
-	m_pfnLibWFX_WriteAPLog((wchar_t *)szContent2.GetString());
+	if (m_pfnLibWFX_WriteAPLog)
+	{
+		CString szContent2;
+		szContent2.Append(szMsg);
+		szContent2.Append(_T("\r\n"));
+		m_pfnLibWFX_WriteAPLog((wchar_t *)szContent2.GetString());
+	}
 	return TRUE;
 }
 
@@ -645,7 +660,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetJsonString(CString szDevName)
 		szDefJson.Append(szDevName);
 		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\"}"));
 	}
-	else if (szDevName == _T("74RU") || szDevName == _T("74BU") || szDevName == _T("7P1U") || szDevName == _T("M11U") || szDevName == _T("7B3U") || szDevName == _T("M12U"))
+	else if (szDevName == _T("74RU") || szDevName == _T("74BU") || szDevName == _T("7P1U") || szDevName == _T("M11U") || szDevName == _T("7B3U") || szDevName == _T("M12U") || szDevName == _T("FE5020"))
 	{
 		szDefJson.Append(_T("{\"device-name\":\""));
 		szDefJson.Append(szDevName);
@@ -823,8 +838,8 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetCommandString(wchar_t* DevName)
 
 	for (vector<string>::size_type idx = 0; idx != buf.size() && idx < m_nCmdMaxNum; ++idx)
 	{
-		std::wstring wstbuffer(buf[idx].begin(), buf[idx].end());
-		std::wstring retbuffer;
+		std::string wstbuffer(buf[idx].begin(), buf[idx].end());
+		std::string retbuffer;
 		retbuffer.clear();
 
 		//if (wstbuffer.at(0) != '{')
@@ -833,28 +848,28 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetCommandString(wchar_t* DevName)
 		int pos = wstbuffer.find('}', 0);
 		wstbuffer.erase(wstbuffer.begin() + pos + 1, wstbuffer.end());
 
-		std::wstring subtoken;//, subtoken2;
+		std::string subtoken;//, subtoken2;
 		int nPos = 0;
 		for (nPos = 0; nPos < wstbuffer.length(); nPos++)
 		{
 			if (wstbuffer.at(nPos) == '"')
-				retbuffer.append(L"\"");
+				retbuffer.append("\"");
 			else if (wstbuffer.at(nPos) == ':')
-				retbuffer.append(L":");
+				retbuffer.append(":");
 			else if (wstbuffer.at(nPos) == ' ')
-				retbuffer.append(L" ");
+				retbuffer.append(" ");
 			else if (wstbuffer.at(nPos) == ',')
-				retbuffer.append(L",");
+				retbuffer.append(",");
 			else if (wstbuffer.at(nPos) == '-')
-				retbuffer.append(L"-");
+				retbuffer.append("-");
 			else
 			{
 				subtoken = wstbuffer.substr(nPos, 1);
 				retbuffer.append(subtoken);
 			}
 		}
-		USES_CONVERSION;
-		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(retbuffer.c_str());
+		CString szDefJson(retbuffer.c_str());
+		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(szDefJson.GetString());
 	}
 	input.close();
 	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->SetCurSel(0);
@@ -895,48 +910,48 @@ BOOL CLibWFXDemoDlg_NonBlockMode::SetCommandString(wchar_t* DevName, CString Com
 	if (pszUTF8IP)
 		delete[] pszUTF8IP;
 
-	FILE *file;
-	vector<CString> cmdtmp;
+	vector<CString> cmdtmp;	
+	int cmdnum = ((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetCount();
+	if (cmdnum < 1)
+		return false;
 
-	if (!fopen_s(&file, pszUTF8, "w+"))
+	for (int nSelIdx = 0; nSelIdx < cmdnum; nSelIdx++)
 	{
-		if (pszUTF8)
-			delete[] pszUTF8;
-
-		int cmdnum = ((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetCount();
-		if (cmdnum < 1)
-			return false;
-
-		for (int nSelIdx = 0; nSelIdx < cmdnum; nSelIdx++)
-		{
-			if (nSelIdx == (m_nCmdMaxNum - 1) || (((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetCurSel() == nSelIdx && nSelIdx != 0))
-				continue;
-			CString tmp;
-			((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetLBText(nSelIdx, tmp);
-			szGetCmd.Append(tmp);
-			szGetCmd.Append(L"\r");
-			cmdtmp.push_back(tmp);
-		}
-
-		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->ResetContent();
-		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(Command);
-		for (int i = 0; i < cmdtmp.size(); i++)
-			((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(cmdtmp[i]);
-
-		Command.Append(L"\r");
-		Command.Append(szGetCmd);
-
-		char szCommand[2048];
-		sprintf_s(szCommand, "%S", Command);
-
-		fwrite(szCommand, 1, strlen(szCommand), file);
-		fclose(file);
-		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->SetCurSel(0);
-		return true;
+		if (nSelIdx == (m_nCmdMaxNum - 1) || (((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetCurSel() == nSelIdx && nSelIdx != 0))
+			continue;
+		CString tmp;
+		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->GetLBText(nSelIdx, tmp);
+		szGetCmd.Append(tmp);
+		szGetCmd.Append(L"\r");
+		cmdtmp.push_back(tmp);
 	}
+
+	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->ResetContent();
+	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(Command);
+	for (int i = 0; i < cmdtmp.size(); i++)
+		((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(cmdtmp[i]);
+
+	Command.Append(L"\r");
+	Command.Append(szGetCmd);
+
+	int size_needed = WideCharToMultiByte(CP_ACP, 0, Command.GetString(), -1, NULL, 0, NULL, NULL);
+	char* buffer = new char[size_needed];
+	WideCharToMultiByte(CP_ACP, 0, Command.GetString(), -1, buffer, size_needed, NULL, NULL);
+
+	std::ofstream outFile(pszUTF8, std::ios::binary);
+	if (outFile) {
+		outFile.write(buffer, size_needed - 1);
+		outFile.close();
+	}
+	if (buffer)
+		delete[] buffer;
 	if (pszUTF8)
 		delete[] pszUTF8;
-	return false;
+	if (!outFile) {  //Error: Unable to open file for writing
+		return false;
+	}
+	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->SetCurSel(0);
+	return true;
 }
 
 wchar_t* CLibWFXDemoDlg_NonBlockMode::rtrim(wchar_t *str)
@@ -991,6 +1006,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 	CDialogEx::OnInitDialog();
 	HWND hwnd = NULL;
 	m_nCmdMaxNum = 5;
+	ShowDlg(true, L"Init");
 	// Set the icon for this dialog.  The framework does this automatically
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
@@ -1013,6 +1029,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 			szErr.Format(_T("[ Warning ] LIBWFX_ERRCODE_NO_INIT - [%d]"), LIBWFX_ERRCODE_NO_INIT);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+			ShowDlg(false, L"Init");
 			return FALSE;
 		}
 		//ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_Init();
@@ -1060,6 +1077,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 		}
 	}
 	static_cast<CButton *>(GetDlgItem(IDC_BUTTON_SET_PROPERTY))->SetFocus();
+	ShowDlg(false, L"Init");
 	return TRUE; //  unless you set the focus to a control
 }
 
@@ -1400,6 +1418,7 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonCalibrate()
 		return;
 	}
 
+	((CComboBox *)GetDlgItem(IDC_COMBO_DEVICE_NAME))->GetLBText(nSelIdx, szGetItemText);
 	if (szGetItemText == _T("A61") || szGetItemText == _T("A62") || szGetItemText == _T("A63") || szGetItemText == _T("A64") || szGetItemText == _T("A65") || szGetItemText == _T("A66") || szGetItemText == _T("J6102"))
 		szCommand.Format(_T("{\"device-name\":\"%s\",\"source\":\"Camera\",\"ext-capturetype\":\"g\"}"), szGetItemText);
 	else
@@ -1415,10 +1434,17 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonCalibrate()
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
 	}
+	if (szGetItemText == _T("A64"))
+		ShowDlg(true, L"Calibrate_xmini");
+	else
+		ShowDlg(true, L"Calibrate");
 
-	ShowCalibrateDlg(true);
 	enErrCode = m_pfnLibWFX_Calibrate();
-	ShowCalibrateDlg(false);
+
+	if (szGetItemText == _T("A64"))
+		ShowDlg(false, L"Calibrate_xmini");
+	else
+		ShowDlg(false, L"Calibrate");
 
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
@@ -1540,9 +1566,9 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonRecyclesavefolder()
 
 void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonMergepdf()
 {
-	CFileDialog fileDlg(true);
-	fileDlg.m_ofn.Flags |= OFN_ALLOWMULTISELECT;
-	fileDlg.m_ofn.lpstrFilter = _T("Images (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG| All files (*.*)|*.*");
+	TCHAR szFilters[] = _T("Image Files (*.bmp;*.jpg;*.png)|*.bmp;*.jpg;*.png||");
+	CFileDialog fileDlg(TRUE, NULL, NULL, OFN_FILEMUSTEXIST | OFN_HIDEREADONLY, szFilters);
+	fileDlg.GetOFN().Flags |= OFN_ALLOWMULTISELECT;
 
 	CString data;
 	fileDlg.m_pOFN->nMaxFile = (MAX_FILE_NAMES*(MAX_PATH + 1)) + 1;
@@ -1578,19 +1604,15 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetSDKInstallPath(TCHAR* szInstallPath, bool b
 {
 	HKEY  key = NULL;
 	TCHAR szRegPath[MAX_PATH] = { 0 };
-#if ((defined(__i386__) || defined(_M_IX86)) && defined(_WIN64))  //OS:X64  EXE:X86
-	if (bIsSDKInstallPath)
+	bool bIsWow64Process = IsWow64Process();
+	if (bIsWow64Process && bIsSDKInstallPath)
 		_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{E96A9957-0A5A-40C3-8358-75A3FA6D9CC7}_is1"));
-	else
+	else if (bIsWow64Process && !bIsSDKInstallPath)
 		_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\WOW6432Node\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-
-#else
-	if (bIsSDKInstallPath)
+	else if (!bIsWow64Process && bIsSDKInstallPath)
 		_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{E96A9957-0A5A-40C3-8358-75A3FA6D9CC7}_is1"));
 	else
 		_stprintf_s(szRegPath, MAX_PATH, _T("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{02232A38-5FF5-47F3-A3C9-268F4588BEE8}_is1"));
-#endif
-
 
 	if (RegOpenKeyEx(HKEY_LOCAL_MACHINE, szRegPath, 0, KEY_QUERY_VALUE, &key) == ERROR_SUCCESS)
 	{
@@ -1619,20 +1641,67 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonRegister()
 	ShellExecute(NULL, _T("open"), szRegisterEXEPath, L"", NULL, SW_NORMAL);
 }
 
-void CLibWFXDemoDlg_NonBlockMode::ShowCalibrateDlg(bool enableDlg)
+
+void CLibWFXDemoDlg_NonBlockMode::ShowDlg(bool enableDlg, wchar_t* szAction)
 {
 	if (enableDlg)
 	{
-		m_CalibrationDlg = new CalibrationDlg();
-		m_CalibrationDlg->Create(CalibrationDlg::IDD, this);
-		m_CalibrationDlg->ShowWindow(SW_SHOW);	
+		if (!wcscmp(szAction, L"Calibrate_xmini"))
+		{
+			m_CalibrationXminiDlg = new CalibrationXminiDlg();
+			m_CalibrationXminiDlg->Create(CalibrationXminiDlg::IDD, this);
+			m_CalibrationXminiDlg->ShowWindow(SW_SHOW);		
+		}
+		else if (!wcscmp(szAction, L"Calibrate"))
+		{
+			m_CalibrationDlg = new CalibrationDlg();
+			m_CalibrationDlg->Create(CalibrationDlg::IDD, this);
+			m_CalibrationDlg->ShowWindow(SW_SHOW);
+		}
+		else
+		{
+			m_InitDlg = new InitDlg();
+			m_InitDlg->Create(InitDlg::IDD, this);
+			m_InitDlg->ShowWindow(SW_SHOW);
+		}
 		this->ShowWindow(SW_HIDE);
 	}
 	else
 	{
-		m_CalibrationDlg->EndDialog(0);
-		delete m_CalibrationDlg;
-		m_CalibrationDlg = NULL;		
+		if (!wcscmp(szAction, L"Calibrate_xmini"))
+		{
+			m_CalibrationXminiDlg->EndDialog(0);
+			delete m_CalibrationXminiDlg;
+			m_CalibrationXminiDlg = NULL;		
+		}
+		else if (!wcscmp(szAction, L"Calibrate"))
+		{
+			m_CalibrationDlg->EndDialog(0);
+			delete m_CalibrationDlg;
+			m_CalibrationDlg = NULL;
+		}
+		else
+		{
+			m_InitDlg->EndDialog(0);
+			delete m_InitDlg;
+			m_InitDlg = NULL;
+		}
 		this->ShowWindow(SW_SHOW);
 	}
+}
+
+BOOL CLibWFXDemoDlg_NonBlockMode::IsWow64Process()
+{
+	BOOL bIsWow64 = FALSE;
+	fnIsWow64Process = (LPFN_ISWOW64PROCESS)GetProcAddress(
+		GetModuleHandle(TEXT("kernel32")), "IsWow64Process");
+
+	if (NULL != fnIsWow64Process)
+	{
+		if (!fnIsWow64Process(GetCurrentProcess(), &bIsWow64))
+		{
+			//handle error
+		}
+	}
+	return bIsWow64;
 }

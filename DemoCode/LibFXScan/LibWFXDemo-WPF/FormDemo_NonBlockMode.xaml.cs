@@ -11,6 +11,7 @@ using System.IO;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using System.Diagnostics;
+using System.Text;
 
 
 namespace LibWFXDemo_CSharp
@@ -22,7 +23,7 @@ namespace LibWFXDemo_CSharp
     {
         ENUM_LIBWFX_ERRCODE m_enErrCode;
         DeviceWrapper m_DeviceWrapper = new DeviceWrapper();
-        FormCalibration formCalibration = null;
+        FormWaitMsg formWaitMsg = null;
         static DeviceWrapper.LIBWFXEVENTCB m_CBEvent;
         static DeviceWrapper.LIBWFXCB m_CBNotify;
         int m_nCount;
@@ -268,6 +269,7 @@ namespace LibWFXDemo_CSharp
             if (m_DeviceWrapper.hLibModule == IntPtr.Zero || m_DeviceWrapper.hCommandModule == IntPtr.Zero)
                 Environment.Exit(0);
 
+            ShowDlg(true, "Init");
             if (m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") == true)
             {
 
@@ -275,6 +277,7 @@ namespace LibWFXDemo_CSharp
                 
                 DispatcherWriteLog(@"[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING.ToString() + " - [" + ((int)ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING).ToString() + "]");
                 DispatcherWriteLog(@"[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT.ToString() + " - [" + ((int)ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT).ToString() + "]");
+                ShowDlg(false, "Init");
                 return;
             }
 
@@ -314,6 +317,7 @@ namespace LibWFXDemo_CSharp
                     DispatcherWriteLog(@"Status:[Path Is Too Long (max limit: 130 bits)]");
                 DispatcherWriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
             }
+            ShowDlg(false, "Init");
         }
 
         [DllImport("kernel32.dll")]
@@ -378,7 +382,7 @@ namespace LibWFXDemo_CSharp
                 szDefJson += szDevName;
                 szDefJson += "\",\"source\":\"Sheetfed-Duplex\"}";
             }
-            else if (szDevName == "74RU" || szDevName == "74BU" || szDevName == "7P1U" || szDevName == "M11U" || szDevName == "7B3U" || szDevName == "M12U")
+            else if (szDevName == "74RU" || szDevName == "74BU" || szDevName == "7P1U" || szDevName == "M11U" || szDevName == "7B3U" || szDevName == "M12U" || szDevName == "FE5020")
             {
                 szDefJson += "{\"device-name\":\"";
                 szDefJson += szDevName;
@@ -440,7 +444,7 @@ namespace LibWFXDemo_CSharp
                 COMBO_COMMAND.Items.Clear();
                 string line = "";
                 int idx = 0;
-                System.IO.StreamReader file = new System.IO.StreamReader(szFilePath);
+                System.IO.StreamReader file = new System.IO.StreamReader(szFilePath, Encoding.Default);
                 while ((line = file.ReadLine()) != null && idx < m_MaxCMDItems)
                 {
                     idx++;
@@ -464,7 +468,7 @@ namespace LibWFXDemo_CSharp
             if (File.Exists(szFilePath))
             {
                 List<string> commandLists = new List<string>();
-                using (StreamWriter outputFile = new StreamWriter(szFilePath))
+                using (StreamWriter outputFile = new StreamWriter(szFilePath, false, Encoding.Default))
                 {
                     outputFile.WriteLine(szCommand);
                     commandLists.Add(szCommand);
@@ -742,9 +746,12 @@ namespace LibWFXDemo_CSharp
                 return;
             }
 
-            ShowCalibrateDlg(true);
+            if (szDevName == "A64")
+                ShowDlg(true, "Calibrate_xmini");
+            else
+                ShowDlg(true, "Calibrate_normal");
             m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_Calibrate();
-            ShowCalibrateDlg(false);
+            ShowDlg(false, "");
 
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
@@ -759,10 +766,7 @@ namespace LibWFXDemo_CSharp
         private void BTN_MERGETOPDF_Click(object sender, RoutedEventArgs e)
         {
             Microsoft.Win32.OpenFileDialog openFileDlg = new Microsoft.Win32.OpenFileDialog();
-            openFileDlg.Filter =
-            "Images (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG|" +
-            "All files (*.*)|*.*";
-
+            openFileDlg.Filter = "Image Files (*.BMP;*.JPG;*.PNG)|*.BMP;*.JPG;*.PNG||";
             openFileDlg.Multiselect = true;
             openFileDlg.Title = "My Image Browser";
 
@@ -939,19 +943,19 @@ namespace LibWFXDemo_CSharp
             }
         }
 
-        private void ShowCalibrateDlg(bool enableDlg)
+        private void ShowDlg(bool enableDlg, string szAction)
         {
             if (enableDlg)
             {
                 this.Hide();
-                formCalibration = new FormCalibration();
-                formCalibration.Show();
-                formCalibration.Focus();
+                formWaitMsg = new FormWaitMsg(szAction);
+                formWaitMsg.Show();
+                formWaitMsg.Focus();
             }
-            else if (formCalibration != null)
-            {              
-                formCalibration.Close();
-                formCalibration = null;         
+            else
+            {
+                formWaitMsg.Close();
+                formWaitMsg = null;
                 this.Show();
             }
         }

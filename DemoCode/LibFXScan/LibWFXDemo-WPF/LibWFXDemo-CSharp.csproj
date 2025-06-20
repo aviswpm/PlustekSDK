@@ -114,11 +114,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
-    <Page Include="FormCalibration.xaml">
-      <Generator>MSBuild:Compile</Generator>
-      <SubType>Designer</SubType>
-    </Page>
-    <Page Include="FormScanning.xaml">
+    <Page Include="FormWaitMsg.xaml">
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </Page>
@@ -139,11 +135,8 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="DeviceWrapper.cs" />
-    <Compile Include="FormCalibration.xaml.cs">
-      <DependentUpon>FormCalibration.xaml</DependentUpon>
-    </Compile>
-    <Compile Include="FormScanning.xaml.cs">
-      <DependentUpon>FormScanning.xaml</DependentUpon>
+    <Compile Include="FormWaitMsg.xaml.cs">
+      <DependentUpon>FormWaitMsg.xaml</DependentUpon>
     </Compile>
     <Compile Include="FormDemo_NonBlockMode.xaml.cs">
       <DependentUpon>FormDemo_NonBlockMode.xaml</DependentUpon>

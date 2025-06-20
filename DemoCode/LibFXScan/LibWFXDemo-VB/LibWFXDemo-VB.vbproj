@@ -135,16 +135,10 @@
   <ItemGroup>
     <Compile Include="ApplicationEvents.vb" />
     <Compile Include="DeviceWrapper.vb" />
-    <Compile Include="FormCalibration.Designer.vb">
-      <DependentUpon>FormCalibration.vb</DependentUpon>
+    <Compile Include="FormWaitMsg.Designer.vb">
+      <DependentUpon>FormWaitMsg.vb</DependentUpon>
     </Compile>
-    <Compile Include="FormCalibration.vb">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="FormScanning.Designer.vb">
-      <DependentUpon>FormScanning.vb</DependentUpon>
-    </Compile>
-    <Compile Include="FormScanning.vb">
+    <Compile Include="FormWaitMsg.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="FormDemo_NonBlockMode.Designer.vb">
@@ -195,11 +189,8 @@
     </Compile>
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="FormCalibration.resx">
-      <DependentUpon>FormCalibration.vb</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="FormScanning.resx">
-      <DependentUpon>FormScanning.vb</DependentUpon>
+    <EmbeddedResource Include="FormWaitMsg.resx">
+      <DependentUpon>FormWaitMsg.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="FormDemo_NonBlockMode.resx">
       <DependentUpon>FormDemo_NonBlockMode.vb</DependentUpon>

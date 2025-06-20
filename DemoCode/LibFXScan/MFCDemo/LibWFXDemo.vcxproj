@@ -216,7 +216,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CalibrationDlg.h" />
+    <ClInclude Include="CalibrationXminiDlg.h" />
     <ClInclude Include="ECODlg.h" />
+    <ClInclude Include="InitDlg.h" />
     <ClInclude Include="LibWFXDemo.h" />
     <ClInclude Include="LibWFXDemoDlg_BlockMode.h" />
     <ClInclude Include="LibWFXDemoDlg_NonBlockMode.h" />
@@ -228,7 +230,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CalibrationDlg.cpp" />
+    <ClCompile Include="CalibrationXminiDlg.cpp" />
     <ClCompile Include="ECODlg.cpp" />
+    <ClCompile Include="InitDlg.cpp" />
     <ClCompile Include="LibWFXDemo.cpp" />
     <ClCompile Include="LibWFXDemoDlg_BlockMode.cpp" />
     <ClCompile Include="LibWFXDemoDlg_NonBlockMode.cpp" />

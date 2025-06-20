@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>WFXDemo_JAVA2.0_git</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>src/adview/webfxscan/Image/license_register.png</name>
+			<type>1</type>
+			<locationURI>$%7BPROJECT_LOC%7D/src/adview/webfxscan/Image/license_register.png</locationURI>
+		</link>
+	</linkedResources>
+</projectDescription>
