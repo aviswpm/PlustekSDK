@@ -98,9 +98,9 @@ Plustek SDK 提供兩種版本：
     [LibFXScan Documentation]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
     [Documentación de LibFXScan]:https://docs.google.com/document/d/e/2PACX-1vQ3M0KV9am29GTKFGmb0dwSFyQAZVFmwDmYA6846pvDPTC3yhN0ZGlBWs-yRjyVYg/pub
 
-    [WebFXScan Javascript 說明文件]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
-    [WebFXScan JavaScript Library Documentation]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
-    [Documentación de la biblioteca JavaScript WebFXScan]:https://aviswpm.github.io/PlustekSDK/Document/webscan-lib-doc/#/quickStart
+    [WebFXScan Javascript 說明文件]:https://aviswpm.github.io/PlustekSDK/Document
+    [WebFXScan JavaScript Library Documentation]:https://aviswpm.github.io/PlustekSDK/Document
+    [Documentación de la biblioteca JavaScript WebFXScan]:https://aviswpm.github.io/PlustekSDK/Document
 
     [License Agreement]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/LICENSE.txt
     [授權]:https://github.com/aviswpm/PlustekSDK/blob/v2.x/LICENSE.txt
