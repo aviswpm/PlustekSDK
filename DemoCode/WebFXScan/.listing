@@ -1,0 +1,13 @@
+drwxrwxr-x   2 1112     1010         4096 May 22 06:14 .
+drwxrwxr-x   3 1148     1010         4096 Apr 28 08:46 ..
+-rw-r--r--   1 1148     1010        78871 May 22 06:14 bootstrap.bundle.min.js
+-rw-r--r--   1 1148     1010       329091 May 22 06:14 bootstrap.bundle.min.js.map
+-rw-r--r--   1 1148     1010       162764 May 22 06:14 bootstrap.min.css
+-rw-r--r--   1 1148     1010       449257 May 22 06:14 bootstrap.min.css.map
+-rw-r--r--   1 1148     1010        11733 May 22 06:14 index.html
+-rw-r--r--   1 1148     1010       168702 May 22 06:14 jquery.3.6.4.js
+-rw-r--r--   1 1148     1010         1080 May 22 06:14 jquery.json-viewer.css
+-rw-r--r--   1 1148     1010         6025 May 22 06:14 jquery.json-viewer.js
+-rw-r--r--   1 1148     1010        24001 May 22 06:14 main.js
+-rw-r--r--   1 1148     1010        75575 May 22 06:14 scan.js
+-rw-r--r--   1 1148     1010         8440 May 22 06:14 style.css

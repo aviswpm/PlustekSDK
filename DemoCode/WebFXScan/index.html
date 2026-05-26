@@ -20,10 +20,14 @@
         <p class="m-0 p-3 h4 text-white">WebFxScan Demo</p>
       </div>
       <!-- Body -->
-      <div class="container-fluid row flex-grow-1 p-0 m-0">
+      <div
+        class="container-fluid row flex-grow-1 p-0 m-0 custom-body-row"
+      >
         <!-- Sidebar / Control Panel -->
-        <div class="custom-bg-sider col-3 p-3 d-flex flex-column">
-          <form id="main-form" class="flex-grow-1 d-flex flex-column">
+        <div
+          class="custom-bg-sider col-3 p-3 d-flex flex-column min-h-0"
+        >
+          <form id="main-form" class="flex-grow-1 d-flex flex-column min-h-0">
             <!-- Select: Device name -->
             <div class="row mb-3">
               <label
@@ -89,55 +93,119 @@
               Scan
             </button>
             <!-- VTM 300 -->
-            <div class="d-flex mb-1 justify-content-between">
-              <label class="m-0 align-self-center fw-bold form-label"
-                >VTM300 Eject Paper</label
+            <div class="d-flex flex-column mb-3 justify-content-between">
+              <label class="m-0 align-self-start fw-bold form-label"
+                >VTM Eject Paper</label
               >
               <div class="d-flex gap-2">
+                <select class="form-select" id="eject-type">
+                  <option value="EJECT_BACKWARDING_FORCE">backwarding - force</option>
+                  <option value="EJECT_FORWARDING_FORCE">forwarding - force</option>
+                  <option value="EJECT_BACKWARDINGS_FORCE">backwarding stop - force</option>
+                  <option value="EJECT_FORWARDINGS_FORCE">forwarding stop - force</option>
+                  <option value="EJECT_BACKWARDING">backwarding</option>
+                  <option value="EJECT_FORWARDING">forwarding</option>
+                  <option value="EJECT_BACKWARDINGS">backwarding stop</option>
+                  <option value="EJECT_FORWARDINGS">forwarding stop</option>
+                  <option value="EJECT_BACKWARDING_BY_STEPS">backwarding by steps</option>
+                  <option value="EJECT_FORWARDING_BY_STEPS">forwarding by steps</option>
+                </select>
                 <button
-                  id="eject-back"
+                  id="eject-paper"
                   type="button"
                   class="custom-button-scan text-white fw-bold btn"
                 >
-                  Back
-                </button>
-                <button
-                  id="eject-front"
-                  type="button"
-                  class="custom-button-scan text-white fw-bold btn"
-                >
-                  Front
+                  Eject
                 </button>
               </div>
             </div>
             <!-- Log Card: websocket message log -->
-            <div class="d-flex mb-1 justify-content-between">
+            <div class="d-flex mb-1 justify-content-between align-items-center">
               <label class="m-0 align-self-center fw-bold form-label"
                 >Message</label
               >
-              <button
-                id="test"
-                type="button"
-                class="custom-button-clear fw-bold btn d-none"
-              >
-                test
-              </button>
-              <button
-                id="clear-message"
-                type="button"
-                class="custom-button-clear fw-bold btn"
-              >
-                Clear
-              </button>
+              <div class="d-flex gap-2">
+                <button
+                  id="test"
+                  type="button"
+                  class="custom-button-clear fw-bold btn d-none"
+                >
+                  test
+                </button>
+                <button
+                  id="clear-message"
+                  type="button"
+                  class="custom-button-clear fw-bold btn"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-            <div class="h-100 d-flex flex-column flex-grow-1">
+            <ul
+              class="nav nav-tabs custom-message-tabs"
+              id="message-tabs"
+              role="tablist"
+            >
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link active"
+                  id="api-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#api-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="api-pane"
+                  aria-selected="true"
+                >
+                  API
+                </button>
+              </li>
+              <li class="nav-item" role="presentation">
+                <button
+                  class="nav-link"
+                  id="event-tab"
+                  data-bs-toggle="tab"
+                  data-bs-target="#event-pane"
+                  type="button"
+                  role="tab"
+                  aria-controls="event-pane"
+                  aria-selected="false"
+                >
+                  Event
+                </button>
+              </li>
+            </ul>
+            <div class="custom-message-panel d-flex flex-column flex-grow-1">
               <div
                 id="message-container"
-                class="custom-card custom-scrollbar overflow-auto card flex-grow-1"
+                class="custom-card card flex-grow-1 min-h-0"
               >
-                <div class="custom-card-body card-body">
-                  <div id="log-container" class="accordion">
-                    <!-- Dynamic content will be inserted here by script -->
+                <div
+                  class="custom-card-body card-body p-0 d-flex flex-column min-h-0"
+                >
+                  <div
+                    class="tab-content flex-grow-1 min-h-0 overflow-hidden d-flex flex-column"
+                  >
+                    <div
+                      class="tab-pane fade show active flex-grow-1 min-h-0 custom-scrollbar overflow-auto"
+                      id="api-pane"
+                      role="tabpanel"
+                      aria-labelledby="api-tab"
+                    >
+                      <div id="log-container" class="accordion">
+                        <!-- Dynamic content will be inserted here by script -->
+                      </div>
+                    </div>
+                    <div
+                      class="tab-pane fade flex-grow-1 min-h-0 custom-scrollbar overflow-auto"
+                      id="event-pane"
+                      role="tabpanel"
+                      aria-labelledby="event-tab"
+                    >
+                      <div id="event-log-container" class="accordion">
+                        <!-- Dynamic content will be inserted here by script -->
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>

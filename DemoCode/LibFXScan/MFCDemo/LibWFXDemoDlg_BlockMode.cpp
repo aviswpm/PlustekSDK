@@ -20,6 +20,7 @@
 #define new DEBUG_NEW
 #endif
 
+#define BC_USDL_FIXFIELDVALUE 0  //option
 using namespace std;
 IMPLEMENT_DYNAMIC(CLibWFXDemoDlg_BlockMode, CDialogEx)
 std::vector<std::wstring> vecImagePath;
@@ -270,6 +271,14 @@ BOOL CLibWFXDemoDlg_BlockMode::InitLib(VOID)
 		return FALSE;
 	}
 
+	m_pfnLibWFX_GetDeviceCapability = (LIBWFX_GETDEVICECAPABILITY)::GetProcAddress(m_hLibWFX, LIBWFX_API_GETDEVICECAPABILITY);
+	if (m_pfnLibWFX_GetDeviceCapability == NULL)
+	{
+		WriteLog(_T("Status:[Get LIBWFX_API_GETDEVICECAPABILITY Fail]"));
+		::FreeLibrary(m_hLibWFX);
+		return FALSE;
+	}
+
 	WriteLog(_T("Status:[Load LibWebFXScan Success]"));
 	m_nCount = 0;
 	return TRUE;
@@ -306,11 +315,13 @@ BOOL CLibWFXDemoDlg_BlockMode::ShowImage(int controlID, std::wstring filepath)
 	if (hRlt != S_OK)
 	{
 		vecImagePath.erase(vecImagePath.begin());
+		m_muxMap.unlock();
 		return FALSE;
 	}
 	if ((Image.GetWidth() == 0) || (Image.GetHeight() == 0))
 	{
 		vecImagePath.erase(vecImagePath.begin());
+		m_muxMap.unlock();
 		return FALSE;
 	}
 
@@ -330,6 +341,11 @@ BOOL CLibWFXDemoDlg_BlockMode::ShowImage(int controlID, std::wstring filepath)
 	}
 
 	CDC* pDC = GetDlgItem(controlID)->GetWindowDC();
+
+	CRect rect;
+	GetDlgItem(controlID)->GetClientRect(&rect);
+	pDC->FillSolidRect(&rect, GetSysColor(COLOR_BTNFACE));
+	pDC->DrawEdge(&rect, EDGE_SUNKEN, BF_RECT);
 	pDC->SetStretchBltMode(COLORONCOLOR);
 
 	rcImage.left += 5;
@@ -353,68 +369,32 @@ BOOL CLibWFXDemoDlg_BlockMode::GetJsonString(CString szDevName)
 	{
 		return TRUE;
 	}
-	else if (szDevName == _T("A61") || szDevName == _T("A62") || szDevName == _T("A63") || szDevName == _T("A64") || szDevName == _T("A65") || szDevName == _T("A66") || szDevName == _T("J6102"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}"));
-	}
-	else if (szDevName == _T("7C1U") || szDevName == _T("7C8U") || szDevName == _T("7C9U") || szDevName == _T("7CAU") || szDevName == _T("773U") || szDevName == _T("7CCU"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}"));
-	}
-	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U") || szDevName == _T("FE7010_FE7011"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\"}"));
-	}
-	else if (szDevName == _T("74RU") || szDevName == _T("74BU") || szDevName == _T("7P1U") || szDevName == _T("M11U") || szDevName == _T("7B3U") || szDevName == _T("M12U") || szDevName == _T("FE5020"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Front\"}"));
-	}
-	else if (szDevName == _T("256U") ||
-		szDevName == _T("258U") ||
-		szDevName == _T("258U_259U") ||
-		szDevName == _T("25AU") ||
-		szDevName == _T("271U") ||
-		szDevName == _T("273U") ||
-		szDevName == _T("273U_274U") ||
-		szDevName == _T("275U") ||
-		szDevName == _T("276U") ||
-		szDevName == _T("261U") ||
-		szDevName == _T("BAG") ||
-		szDevName == _T("7K1U") ||
-		szDevName == _T("6C6U") ||
-		szDevName == _T("BB1U") ||
-		szDevName == _T("BAGU") ||
-		szDevName == _T("2B2U") ||
-		szDevName == _T("2B3U") ||
-		szDevName == _T("7N1U") ||
-		szDevName == _T("2D1U") ||
-		szDevName == _T("2C1U") ||
-		szDevName == _T("797U") ||
-		szDevName == _T("7K7U") ||
-		szDevName == _T("2G1U") ||
-		szDevName == _T("2G2U") ||
-		szDevName == _T("678U") ||
-		szDevName == _T("7K8U") ||
-		szDevName == _T("B85U") ||
-		szDevName == _T("2D3U"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Flatbed\"}"));
-	}
 	else
 	{
 		szDefJson.Append(_T("{\"device-name\":\""));
 		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"ADF-Duplex\"}"));
+		ENUM_SOURCETYPE enSource = UNKNOWN;
+		ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetDeviceCapability(T2W(szDevName.GetBuffer()), &enSource, NULL, NULL, NULL, NULL, NULL, NULL);
+
+		if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
+		{
+			CString szErr;
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+			return TRUE;
+		}
+		else if (enSource == SHEETFED)
+			szDefJson.Append(_T("\",\"source\":\"Sheetfed-Front\"}"));
+		else if (enSource == FLATBED)
+			szDefJson.Append(_T("\",\"source\":\"Flatbed\"}"));
+		else if (enSource == CAMERA)
+			szDefJson.Append(_T("\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}"));
+		else if (enSource == ADF || enSource == ADF_SHEETFED || enSource == ADF_FLATBED)
+			szDefJson.Append(_T("\",\"source\":\"ADF-Duplex\"}"));
+		else
+			return TRUE;
 	}
 	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(szDefJson);
 	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->SetCurSel(0);
@@ -587,7 +567,7 @@ BOOL CLibWFXDemoDlg_BlockMode::SetCommandString(wchar_t* DevName, CString Comman
 	char* pszUTF8IP = new char[nUTF8LenIP + 1];
 	WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)DevName, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
 	CString devname(pszUTF8IP);
-	if (Command.Compare(devname) == -1)
+	if (Command.Find(devname) == -1)
 		return false;
 
 	CString szGetCmd;
@@ -670,9 +650,9 @@ wchar_t* CLibWFXDemoDlg_BlockMode::rtrim(wchar_t* str) {
 
 void CLibWFXDemoDlg_BlockMode::GetCertificatePermission()
 {
-	const wchar_t* szPermissionTypeList = NULL;
+	wchar_t szPermissionTypeList[MAX_PATH] = { 0 };
 	CString szErr;
-	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetCertificatePermission(&szPermissionTypeList, LIBWFX_DATA_TYPE_REGINFO);
+	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetCertificatePermission(szPermissionTypeList, LIBWFX_DATA_TYPE_REGINFO);
 	if (enErrCode == LIBWFX_ERRCODE_SUCCESS)
 	{
 		int nUTF8LenIP = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szPermissionTypeList, -1, NULL, 0, NULL, NULL);
@@ -713,6 +693,17 @@ BOOL CLibWFXDemoDlg_BlockMode::OnInitDialog()
 
 	HICON hicon = AfxGetApp()->LoadIconW(IDI_LICENSE);
 	m_bt_register.SetIcon(hicon);
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding stop- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding stop- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding stop"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding stop"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding by steps"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding by steps"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->SetCurSel(0);
 #ifdef _DEBUG
 	AllocConsole();
 #endif
@@ -721,13 +712,13 @@ BOOL CLibWFXDemoDlg_BlockMode::OnInitDialog()
 	{		
 		if (m_pfnLibWFX_IsWindowExist(L"") == true)
 		{
+			ShowDlg(false, L"Init");
 			::MessageBoxW(hwnd, L"Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!", L"Warning", MB_OK | MB_ICONEXCLAMATION);
 			CString szErr;
 			szErr.Format(_T("[ Warning ]LIBWFX_ERRCODE_SPECIFIC_AP_OPENING - [%d]"), LIBWFX_ERRCODE_SPECIFIC_AP_OPENING);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 			szErr.Format(_T("[ Warning ]LIBWFX_ERRCODE_NO_INIT - [%d]"), LIBWFX_ERRCODE_NO_INIT);
-			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-			ShowDlg(false, L"Init");
+			WriteLog(const_cast<TCHAR *>(szErr.GetString()));	
 			return FALSE;
 		}
 		//ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_Init();
@@ -797,8 +788,32 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonRefresh()
 void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEditCmd()
 {
 	typedef void(__stdcall* API_EDIT_COMMAND)(wchar_t*, wchar_t**);
+	TCHAR szExeDirPath[AVI_MAXPATH_LEN] = { 0 };
+	DWORD dwLen = GetModuleFileName(NULL, szExeDirPath, AVI_MAXPATH_LEN);
+	while (dwLen-- > 0) {
+		if (szExeDirPath[dwLen] == _T('\\')) {
+			szExeDirPath[dwLen + 1] = 0;
+			break;
+		}
+	}
+	TCHAR szDLLPath[AVI_MAXPATH_LEN + 1];
+	_stprintf_s(szDLLPath, _T("%s%s"), szExeDirPath, _T("CommandEditor.dll"));
+	HMODULE hLib = LoadLibraryEx(szDLLPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 
-	HMODULE hLib = ::LoadLibrary(_T("CommandEditor.dll"));
+	if (hLib == NULL)
+	{
+		TCHAR szSDKDLLPath[AVI_MAXPATH_LEN] = { 0 };
+		if (GetSDKInstallPath(szSDKDLLPath, false))
+		{
+			if (szDLLPath[_tcslen(szSDKDLLPath) - 1] != _T('\\'))
+			{
+				_tcscat_s(szSDKDLLPath, _T("\\"));
+			}
+			_tcscat_s(szSDKDLLPath, _T("CommandEditor.dll"));
+			hLib = ::LoadLibrary(szSDKDLLPath);
+		}
+	}
+
 	if (hLib == NULL)
 	{
 		WriteLog(_T("Status:[Load CommandEditor Fail]"));
@@ -817,9 +832,13 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEditCmd()
 
 	wchar_t* szRtn = NULL;
 	pfn((wchar_t *)szCommand.GetString(), &szRtn);
-
-	GetDlgItem(IDC_COMBO_COMMAND)->SetWindowText(szRtn);
-
+	if (szRtn != nullptr)
+	{
+		if (!wcscmp(L"Invalid JSON format", szRtn))
+			::MessageBox(NULL, _T("Invalid JSON format"), _T("Message"), MB_YESNO);
+		else
+			GetDlgItem(IDC_COMBO_COMMAND)->SetWindowText(szRtn);
+	}
 	::FreeLibrary(hLib);
 }
 
@@ -870,12 +889,33 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEject()
 		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		return;
 	}
-	ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect = ((CButton *)GetDlgItem(IDC_CHECK_BACKWARD))->GetCheck() == BST_CHECKED ? LIBWFX_EJECT_BACKWARDING : LIBWFX_EJECT_FORWARDING;
+	ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect = LIBWFX_EJECT_BACKWARDING;
+	CString szEjectDirection;
+	GetDlgItem(IDC_COMBO_EJECT_DIRECTION)->GetWindowText(szEjectDirection);
+	if (szEjectDirection == _T("eject backwarding- force")) enEjectDirect = LIBWFX_EJECT_BACKWARDING;
+	else if (szEjectDirection == _T("eject forwarding- force")) enEjectDirect = LIBWFX_EJECT_FORWARDING;
+	else if (szEjectDirection == _T("eject backwarding stop- force")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGS;
+	else if (szEjectDirection == _T("eject forwarding stop- force")) enEjectDirect = LIBWFX_EJECT_FORWARDINGS;
+	else if (szEjectDirection == _T("eject backwarding")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGD;
+	else if (szEjectDirection == _T("eject forwarding")) enEjectDirect = LIBWFX_EJECT_FORWARDINGD;
+	else if (szEjectDirection == _T("eject backwarding stop")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGSD;
+	else if (szEjectDirection == _T("eject forwarding stop")) enEjectDirect = LIBWFX_EJECT_FORWARDINGSD;
+	else if (szEjectDirection == _T("eject backwarding by steps")) enEjectDirect = LIBWFX_EJECT_BACKWARDING_BY_STEPS;
+	else if (szEjectDirection == _T("eject forwarding by steps")) enEjectDirect = LIBWFX_EJECT_FORWARDING_BY_STEPS;
+
 	enErrCode = m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, &szErrorMsg);
 
 	int nUTF8LenIP = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, NULL, 0, NULL, NULL);
 
-	if (nUTF8LenIP > 1) //event happen
+	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
+	{
+		CString szErr;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+	}
+	else if (nUTF8LenIP > 1) //event happen
 	{
 		char* pszUTF8IP = new char[nUTF8LenIP + 1];
 		WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
@@ -887,18 +927,8 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonEject()
 		if (pszUTF8IP)
 			delete[] pszUTF8IP;
 	}
-	else if (enErrCode == LIBWFX_ERRCODE_SUCCESS)
-	{
-		WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));
-	}
-	else
-	{
-		CString szErr;
-		wchar_t szErrorMsg[MAX_PATH] = { 0 };
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
-		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
-		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-	}
+	else 
+		WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));	
 }
 
 void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonPaperReady()
@@ -995,7 +1025,7 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonCalibrate()
 	}
 	((CComboBox *)GetDlgItem(IDC_COMBO_DEVICE_NAME))->GetLBText(nSelIdx, szGetItemText);
 
-	if (szGetItemText == _T("A61") || szGetItemText == _T("A62") || szGetItemText == _T("A63") || szGetItemText == _T("A64") || szGetItemText == _T("A65") || szGetItemText == _T("A66") || szGetItemText == _T("J6102"))
+	if (szGetItemText == _T("A61") || szGetItemText == _T("A62") || szGetItemText == _T("A63") || szGetItemText == _T("A64") || szGetItemText == _T("A65") || szGetItemText == _T("A66") || szGetItemText == _T("J6102") || szGetItemText == _T("J1204"))
 		szCommand.Format(_T("{\"device-name\":\"%s\",\"source\":\"Camera\",\"ext-capturetype\":\"g\"}"), szGetItemText);
 	else
 		GetDlgItem(IDC_COMBO_COMMAND)->GetWindowText(szCommand);
@@ -1176,21 +1206,45 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 			wchar_t* position = _wcsdup((wchar_t*)szScanImageList);
 			wchar_t* position2 = _wcsdup((wchar_t*)szOCRResultList);
 
-			while ((token = wcsstr(position, delim)) != nullptr)
+			while (wcsstr(position, delim) != nullptr || wcsstr(position2, delim) != nullptr)
 			{
-				token2 = wcsstr(position2, delim);
-				*token = L'\0';
-				*token2 = L'\0';
-				WriteLog(rtrim(position));
-				WriteLog(rtrim(position2));
-
-				if (!wcsstr((wchar_t *)rtrim(position), L".pdf") && !wcsstr((wchar_t *)rtrim(position), L".tif") && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
+				if (wcsstr(position, delim) != nullptr)
 				{
-					vecImagePath.push_back(rtrim(position));
-					SetTimer(vecImagePath.size(), 1, NULL);
+					token = wcsstr(position, delim);
+					*token = L'\0';
+					WriteLog(rtrim(position));
+					if ((wcsstr((wchar_t *)rtrim(position), L".jpg") != NULL || wcsstr((wchar_t *)rtrim(position), L".bmp") != NULL || wcsstr((wchar_t *)rtrim(position), L".png") != NULL) && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
+					{
+						vecImagePath.push_back(rtrim(position));
+						SetTimer(vecImagePath.size(), 1, NULL);
+					}
+					position = token + wcslen(delim);
 				}
-				position = token + wcslen(delim);
-				position2 = token2 + wcslen(delim);
+				if (wcsstr(position2, delim) != nullptr)
+				{
+					token2 = wcsstr(position2, delim);
+					*token2 = L'\0';
+#if	BC_USDL_FIXFIELDVALUE
+					std::wstring wstrOCRData(position2);
+					if (wstrOCRData.find(L"\"IIN\":\"636028\"") != std::wstring::npos)
+					{
+						USES_CONVERSION;
+						char* szUpdatedJson = FixUSDLFieldValueToJsonFile(W2A(position), W2A(position2));
+						if (szUpdatedJson != nullptr)
+						{
+							CString szLogMsg;
+							szLogMsg.Format(_T("%s"), A2W(szUpdatedJson));
+							WriteLog(const_cast<LPTSTR>(szLogMsg.GetString()));
+							free(szUpdatedJson);
+						}
+					}
+					else
+						WriteLog(rtrim(position2));
+#else					
+					WriteLog(rtrim(position2));
+#endif
+					position2 = token2 + wcslen(delim);
+				}
 			}
 		}
 	}
@@ -1223,21 +1277,45 @@ void CLibWFXDemoDlg_BlockMode::OnBnClickedButtonScan()
 		{
 			wchar_t* position = _wcsdup((wchar_t*)szScanImageList);
 			wchar_t* position2 = _wcsdup((wchar_t*)szOCRResultList);
-			while ((token = wcsstr(position, delim)) != nullptr)
+			while (wcsstr(position, delim) != nullptr || wcsstr(position2, delim) != nullptr)
 			{
-				token2 = wcsstr(position2, delim);
-				*token = L'\0';
-				*token2 = L'\0';
-				WriteLog(rtrim(position));	
-				WriteLog(rtrim(position2));
-
-				if (!wcsstr((wchar_t *)rtrim(position), L".pdf") && !wcsstr((wchar_t *)rtrim(position), L".tif") && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
+				if (wcsstr(position, delim) != nullptr)
 				{
-					vecImagePath.push_back(rtrim(position));
-					SetTimer(vecImagePath.size(), 1, NULL);
+					token = wcsstr(position, delim);
+					*token = L'\0';
+					WriteLog(rtrim(position));
+					if ((wcsstr((wchar_t *)rtrim(position), L".jpg") != NULL || wcsstr((wchar_t *)rtrim(position), L".bmp") != NULL || wcsstr((wchar_t *)rtrim(position), L".png") != NULL) && !wcsstr(CharUpper((wchar_t *)rtrim(position)), L"_PHOTO") && wcscmp((wchar_t *)rtrim(position), L""))
+					{
+						vecImagePath.push_back(rtrim(position));
+						SetTimer(vecImagePath.size(), 1, NULL);
+					}
+					position = token + wcslen(delim);
 				}
-				position = token + wcslen(delim);
-				position2 = token2 + wcslen(delim);
+				if (wcsstr(position2, delim) != nullptr)
+				{
+					token2 = wcsstr(position2, delim);
+					*token2 = L'\0';
+#if	BC_USDL_FIXFIELDVALUE
+					std::wstring wstrOCRData(position2);
+					if (wstrOCRData.find(L"\"IIN\":\"636028\"") != std::wstring::npos)
+					{
+						USES_CONVERSION;
+						char* szUpdatedJson = FixUSDLFieldValueToJsonFile(W2A(position), W2A(position2));
+						if (szUpdatedJson != nullptr)
+						{
+							CString szLogMsg;
+							szLogMsg.Format(_T("%s"), A2W(szUpdatedJson));
+							WriteLog(const_cast<LPTSTR>(szLogMsg.GetString()));
+							free(szUpdatedJson);
+						}
+					}
+					else
+						WriteLog(rtrim(position2));
+#else					
+				WriteLog(rtrim(position2));
+#endif
+					position2 = token2 + wcslen(delim);
+				}
 			}
 		}
 	}
@@ -1453,4 +1531,95 @@ BOOL CLibWFXDemoDlg_BlockMode::IsWow64Process()
 		}
 	}
 	return bIsWow64;
+}
+
+char* CLibWFXDemoDlg_BlockMode::FixUSDLFieldValueToJsonFile(const char* szFilePath, const char* szOCRData)
+{
+	const char* targetKey = "\"SecurityFunction\":";
+	const char* pTarget = strstr(szOCRData, targetKey);
+	const char* pInsertAfter = nullptr;
+
+	if (pTarget != NULL) {
+		const char* pValueStart = strchr(pTarget + strlen(targetKey), '\"');
+		if (pValueStart) {
+			const char* pValueEnd = strchr(pValueStart + 1, '\"');
+			if (pValueEnd) {
+				pInsertAfter = pValueEnd + 1;
+			}
+		}
+	}
+
+	if (pInsertAfter == NULL) {
+		const char* fallbackKey = "\"CardExpiryDate\":";
+		const char* pFallback = strstr(szOCRData, fallbackKey);
+		if (pFallback != NULL) {
+			const char* pValueStart = strchr(pFallback + strlen(fallbackKey), '\"');
+			if (pValueStart) {
+				const char* pValueEnd = strchr(pValueStart + 1, '\"');
+				if (pValueEnd) {
+					pInsertAfter = pValueEnd + 1;
+				}
+			}
+		}
+	}
+
+	if (pInsertAfter == NULL) {
+		return _strdup(szOCRData);
+	}
+
+	const char* key = "\"CardExpiryDate\":";
+	const char* pKey = strstr(szOCRData, key);
+	char cardExpiry[32] = { 0 };
+
+	if (pKey != NULL) {
+		const char* pValStart = strchr(pKey + strlen(key), '\"');
+		if (pValStart) {
+			pValStart++;
+			const char* pValEnd = strchr(pValStart, '\"');
+			if (pValEnd) {
+				int valLen = pValEnd - pValStart;
+				if (valLen < sizeof(cardExpiry)) {
+					strncpy_s(cardExpiry, sizeof(cardExpiry), pValStart, valLen);
+				}
+			}
+		}
+	}
+
+	char newField[128] = { 0 };
+	if (pKey != NULL && cardExpiry[0] != '\0') {
+		sprintf_s(newField, sizeof(newField), ",\"ExpiryDateExt\":\"20%s\"", cardExpiry);
+	}
+	else {
+		sprintf_s(newField, sizeof(newField), ",\"ExpiryDateExt\":\"\"");
+	}
+
+	size_t prefixLen = pInsertAfter - szOCRData;
+	size_t suffixLen = strlen(pInsertAfter);
+
+	char* szFinalJson = (char*)malloc(prefixLen + strlen(newField) + suffixLen + 1);
+
+	if (!szFinalJson) {
+		return _strdup(szOCRData);
+	}
+
+	memcpy(szFinalJson, szOCRData, prefixLen);
+	memcpy(szFinalJson + prefixLen, newField, strlen(newField));
+	memcpy(szFinalJson + prefixLen + strlen(newField), pInsertAfter, suffixLen);
+	szFinalJson[prefixLen + strlen(newField) + suffixLen] = '\0';
+
+	char szJsonPath[512];
+	strcpy_s(szJsonPath, sizeof(szJsonPath), szFilePath);
+	char* dot = strrchr(szJsonPath, '.');
+	if (dot) *dot = '\0';
+	strcat_s(szJsonPath, sizeof(szJsonPath), "_OCR.json");
+
+	FILE* fp = NULL;
+	errno_t err = fopen_s(&fp, szJsonPath, "w");
+	if (err == 0 && fp != NULL) {
+		fputs(szFinalJson, fp);
+		fclose(fp);
+		return szFinalJson;
+	}
+
+	return _strdup(szOCRData);
 }

@@ -100,7 +100,6 @@ public class DemoFrame_NonBlockMode {
 	private JButton btnMergePdf;
 	private JProgressBar progressScan;
 	private JButton btnEjectPaper;
-	private JCheckBox chkEjectDirect;
 	private JButton btnPaperStatus;
 	private JTextField editor;
 
@@ -108,6 +107,7 @@ public class DemoFrame_NonBlockMode {
 	private int nWarmupTotalTime;
 	private int m_nMaxCMDItems;
 	private JButton btnRegister;
+	private JComboBox comboEjectDirection;
 	/**
 	 * Launch the application.
 	 */
@@ -242,56 +242,29 @@ public class DemoFrame_NonBlockMode {
 				{
 					return;
 				}
-				else if (m_szDevice.equals("7C1U") || m_szDevice.equals("7C8U") || m_szDevice.equals("7C9U") || m_szDevice.equals("7CAU") || m_szDevice.equals("773U") || m_szDevice.equals("7CCU")) 
-				{
-					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}";
-				} 
-				else if (m_szDevice.equals("776U") || m_szDevice.equals("777U") || m_szDevice.equals("778U")) 
-                {
-                    szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Duplex\"}";
-                } 
-				else if (m_szDevice.equals("A61") || m_szDevice.equals("A62")  || m_szDevice.equals("A63") || m_szDevice.equals("A64") || m_szDevice.equals("A65") || m_szDevice.equals("A66") || m_szDevice.equals("J6102")) 
-				{
-					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}";
-				} 
-				else if (m_szDevice.equals("74RU") || m_szDevice.equals("74BU")  || m_szDevice.equals("7P1U")  || m_szDevice.equals("M11U") || m_szDevice.equals("7B3U") || m_szDevice.equals("M12U") || m_szDevice.equals("FE5020")) 
-				{
-					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Front\"}";
-				}
-				else if (m_szDevice.equals("256U") ||
-						 m_szDevice.equals("258U") ||
-						 m_szDevice.equals("258U_259U") ||
-						 m_szDevice.equals("25AU") ||
-				         m_szDevice.equals("271U") ||
-				         m_szDevice.equals("273U") ||
-				         m_szDevice.equals("273U_274U") ||
-				         m_szDevice.equals("275U") ||
-				         m_szDevice.equals("276U") ||
-				         m_szDevice.equals("261U") ||
-				         m_szDevice.equals("BAG")  ||
-				         m_szDevice.equals("7K1U") ||
-				         m_szDevice.equals("6C6U") ||
-				         m_szDevice.equals("BB1U") ||
-				         m_szDevice.equals("BAGU") ||
-				         m_szDevice.equals("2B2U") ||
-				         m_szDevice.equals("2B3U") ||
-					     m_szDevice.equals("7N1U") ||
-					     m_szDevice.equals("2D1U") ||
-					     m_szDevice.equals("2C1U") ||
-					     m_szDevice.equals("797U") ||
-					     m_szDevice.equals("7K7U") ||
-					     m_szDevice.equals("2G1U") ||
-					     m_szDevice.equals("2G2U") ||
-					     m_szDevice.equals("678U") ||
-					     m_szDevice.equals("7K8U") ||
-					     m_szDevice.equals("B85U") ||
-					     m_szDevice.equals("2D3U"))
-				{
-					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Flatbed\"}";
-				}
 				else
-				{
-					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"ADF-Front\"}";
+				{				
+					int[] caps = new int[7];
+					int ret = m_WFXScan.WFXScan_GetDeviceCapability(m_szDevice, caps);
+					if(ret == WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
+					{
+						if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.CAMERA)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Camera\",\"recognize-type\":\"passport\",\"autoscan\":true}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.SHEETFED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Front\",\"autoscan\":true}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.FLATBED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Flatbed\"}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF || caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF_FLATBED || caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF_SHEETFED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"ADF-Duplex\",\"autoscan\":true}";
+						else
+							return;
+					}
+					else
+					{
+						m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
+						WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
+						return;
+					}
 				}
 				comboScanCmd.removeAllItems();
 				comboScanCmd.addItem(szCommandtmp);
@@ -321,7 +294,12 @@ public class DemoFrame_NonBlockMode {
 						comboDeviceList.removeAllItems();
 						for (int i = 0; i < jsonDeviceList.length(); i++) {
 							comboDeviceList.addItem(jsonDeviceList.get(i).toString());
-							WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: " + jsonSerialNumberList.get(i).toString() + "\n");
+							String sn = (jsonSerialNumberList != null) ? jsonSerialNumberList.optString(i, "") : "";
+						    if (!sn.isEmpty()) {
+						        WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: " + jsonSerialNumberList.get(i).toString() + "\n");
+							} else {
+						        WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: \n");
+						    }
 						}
 					}
 				}
@@ -468,7 +446,12 @@ public class DemoFrame_NonBlockMode {
 		            m_WFXScan.WFXScan_EditCommand(szCommand, szRtn);
 
 		            if ((szRtn != null) && (szRtn.szValue.length() > 0))
-		            {		               
+		            {
+		            	if(szRtn.szValue.contains("Invalid JSON format") == true)
+		            	{
+		            		javax.swing.JOptionPane.showMessageDialog(null, "Invalid JSON format");
+		        			return;
+		            	}
 		                commandLists.add(szRtn.szValue);
 		                for (int idx = 0; idx < comboScanCmd.getItemCount(); idx++)
 		                {
@@ -543,7 +526,18 @@ public class DemoFrame_NonBlockMode {
 		panel_normal.add(btnScan);
 		btnScan.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent arg0) {
-				m_nCount = 0;
+				if(comboScanCmd.getSelectedIndex() == -1)
+				{
+					editor = (JTextField) comboScanCmd.getEditor().getEditorComponent();
+					m_szCommand = editor.getText();					
+				}
+				else
+					m_szCommand = String.valueOf(comboScanCmd.getSelectedItem());		
+				
+		    	if (m_szCommand.indexOf("\"recognize-type\":\"DocumentExtract\"") != -1) {
+		    		javax.swing.JOptionPane.showMessageDialog(null, "\"DocumentExtract\" is not supported in Non - Block Mode.Please modify LibWebFxScan.ini to enable Block Mode for this function.");
+		    		return;
+		    	 }
 				int ret = m_WFXScan.WFXScan_StartScan(m_NotifyCB);
 				if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret)
 				{
@@ -637,9 +631,8 @@ public class DemoFrame_NonBlockMode {
 				WriteLog("Status:[LibWFX_MergeToPdf Success]\n");
 			}
 		});
-		btnMergePdf.setFont(new Font("Consolas", Font.PLAIN, 14));
-		btnMergePdf.setBackground(new Color(204, 204, 204));
 		
+
 		btnCalibrate = new JButton("Calibrate");
 		panel_normal.add(btnCalibrate);
 		btnCalibrate.addActionListener(new ActionListener() {
@@ -718,9 +711,11 @@ public class DemoFrame_NonBlockMode {
 		flowLayout_1.setVgap(8);
 		flowLayout_1.setHgap(15);
 		panel_vtm300.setBackground(Color.WHITE);
-		panel_vtm300.setBorder(new TitledBorder(null, "VTM300", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		panel_vtm300.setBounds(387, 447, 184, 64);
+		panel_vtm300.setBorder(new TitledBorder(null, "VTM", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_vtm300.setBounds(387, 447, 202, 94);
 		frmWfxdemo.getContentPane().add(panel_vtm300);
+		comboEjectDirection = new JComboBox<>(new String[]{"eject backwarding- force", "eject forwarding- force", "eject backwarding stop- force", "eject forwarding stop- force", "eject backwarding", "eject forwarding", "eject backwarding stop", "eject forwarding stop", "eject backwarding by steps", "eject forwarding by steps"});
+		panel_vtm300.add(comboEjectDirection);
 		
 		btnEjectPaper = new JButton("Eject");
 		panel_vtm300.add(btnEjectPaper);
@@ -732,26 +727,58 @@ public class DemoFrame_NonBlockMode {
 					WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_DEVICES + "]\n");
 					return;
 				}
-                int nEjectDirect = chkEjectDirect.isSelected() ? ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING : ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING;
-                int ret = m_WFXScan.WFXScan_EjectPaperControlWithMsg(nEjectDirect, m_szErrorMsg);
+            	int ret = 0;
+				if(comboScanCmd.getSelectedIndex() == -1)
+				{
+					editor = (JTextField) comboScanCmd.getEditor().getEditorComponent();
+					ret = m_WFXScan.WFXScan_SetProperty(editor.getText(), null);					
+				}
+				else
+					ret = m_WFXScan.WFXScan_SetProperty(String.valueOf(comboScanCmd.getSelectedItem()), null);		
+				
+				if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret)
+                {
+					m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
+					WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
+                    return;
+                }
+            	int nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            	if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding stop- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding stop- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding stop")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGSD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding stop")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGSD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding by steps")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING_BY_STEPS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding by steps")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING_BY_STEPS;
+            	
+            	ret = m_WFXScan.WFXScan_EjectPaperControlWithMsg(nEjectDirect, m_szErrorMsg);
                 
-                if(m_szErrorMsg.szValue.length() > 0)
-                	WriteLog(m_szErrorMsg.szValue + "\n");
-                else if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret) {                   
+                
+                if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret) {                   
                     m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
 					WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");	
                 }
+                else if(m_szErrorMsg.szValue.length() > 0)
+                	WriteLog(m_szErrorMsg.szValue + "\n");
                 else
                     WriteLog("Status:[LibWFX_EjectPaperControl Success]\n");
             }
         });
 		btnEjectPaper.setBackground(new Color(204, 204, 204));
 		btnEjectPaper.setFont(new Font("Consolas", Font.PLAIN, 14));
-		
-		chkEjectDirect = new JCheckBox("Back");
-		panel_vtm300.add(chkEjectDirect);
-		chkEjectDirect.setBackground(new Color(255, 255, 255));
-		chkEjectDirect.setFont(new Font("Consolas", Font.PLAIN, 14));
 				
 		btnRegister = new JButton();	
 		btnRegister.addActionListener(new ActionListener() {
@@ -900,14 +927,16 @@ public class DemoFrame_NonBlockMode {
 				if (object != null) {
 				    if (String.valueOf(comboScanCmd.getSelectedItem()).indexOf("\"rawdata\":true") == -1) {
 				        String szImagePath = object.toString();
-				        File file = new File(szImagePath);
-				        if(!file.exists())
-				        	return;
     				    //DemoFrame_NonBlockMode.txtArStatus.append(szImagePath + "\n");
 				        WriteLog(szImagePath + "\n");
+
     				    if (szImagePath.contains(".pdf") == false && szImagePath.contains(".tif") == false && szImagePath.toUpperCase().contains("_PHOTO") == false) {
         					BufferedImage img = null;
         					try {
+        						File file = new File(szImagePath);
+        						if (!file.exists() || !file.isFile()) {
+        						    return;
+        						}
         						img = ImageIO.read(new File(szImagePath));
         					} catch (IOException e) {
         						e.printStackTrace();
@@ -985,7 +1014,7 @@ public class DemoFrame_NonBlockMode {
 				}
 			}else if (enNotifyCode == WebFXScan.ENUM_LIBWFX_NOTIFY_CODE.LIBWFX_NOTIFY_END) {					
 				 //DemoFrame_NonBlockMode.txtArStatus.append("\nStatus:[Scan End]\n\n");
-				 WriteLog("\nStatus:[Scan End]\n\n");
+				 WriteLog("\nStatus:[Scan End]\n\n");				
 				 if ((String.valueOf(comboScanCmd.getSelectedItem()).indexOf("\"device-name\":\"776U\"") != -1 || String.valueOf(comboScanCmd.getSelectedItem()).indexOf("\"device-name\":\"777U\"") != -1) && String.valueOf(comboScanCmd.getSelectedItem()).indexOf("\"backward-eject\":true") != -1 ) {
 					 int ret = m_WFXScan.WFXScan_EjectPaperControlWithMsg(ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING, m_szErrorMsg);               		            		                
 		             if (m_szErrorMsg.szValue.length() > 0)
@@ -1088,7 +1117,7 @@ public class DemoFrame_NonBlockMode {
 				WriteLog("[ Notice ] LIBWFX_EVENT_NO_PAPER - ["  + ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_NO_PAPER + "]\n");
 				break;
 			case ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_PAPER_DETECTED:
-				 if (nParam == 0)
+				 if (nParam == 3)
 					 //DemoFrame_NonBlockMode.txtArStatus.append("[LIBWFX_EVENT_PAPER_DETECTED]\n");
 					 WriteLog("LIBWFX_EVENT_PAPER_DETECTED\n");
                  else if (nParam == 1)
@@ -1163,6 +1192,17 @@ public class DemoFrame_NonBlockMode {
 		        break;
 		    case ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_PAPER_FEEDING_ERROR:
 		    	WriteLog("[ Notice ] LIBWFX_EVENT_PAPER_FEEDING_ERROR - ["  + ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_PAPER_FEEDING_ERROR + "]\n");
+		    	String cmd = String.valueOf(comboScanCmd.getSelectedItem());
+				//exclude VTM300
+		    	if((cmd.contains("\"device-name\":\"776U\"") == true || cmd.contains("\"device-name\":\"778U\"") == true) && cmd.contains("\"fastscan\":true") == false)
+		    		return;
+		    	cmd = cmd.replace("\"autoscan\":true", "\"autoscan\":false");
+		    	ret = m_WFXScan.WFXScan_SetProperty(cmd, m_EventCB);
+		    	if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret)
+				{							
+					m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
+					WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
+				}	
                 break;
 		    case ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_UVSECURITY_DETECTED:
 		        if (nParam == 0)
@@ -1195,6 +1235,9 @@ public class DemoFrame_NonBlockMode {
 			case ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_CAMERA_TIMEOUT:
 		    	//DemoFrame_NonBlockMode.txtArStatus.append("[LIBWFX_EVENT_CAMERA_TIMEOUT]\n");
 				WriteLog("[ Notice ] LIBWFX_EVENT_CAMERA_TIMEOUT - ["  + ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_CAMERA_TIMEOUT + "]\n");
+                break;
+            default:
+            	WriteLog("[ Notice ] Undefined Event\n");    
                 break;
 			}
 			

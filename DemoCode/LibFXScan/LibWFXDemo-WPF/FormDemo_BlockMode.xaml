@@ -39,10 +39,21 @@
         <Button x:Name="BTN_MERGETOPDF" Content="MergePDF" HorizontalAlignment="Left" Margin="48,374,0,0" VerticalAlignment="Top" Width="86" Click="BTN_MERGETOPDF_Click" Height="19" />
         <Button x:Name="BTN_RECYCLESAVEFOLDER" Content="RecycleSaveFolder" HorizontalAlignment="Left" Margin="243,339,0,0" VerticalAlignment="Top" Width="184" Height="19" Click="BTN_RECYCLESAVEFOLDER_Click" />
         <Image x:Name="PIC_1" Margin="1,24,12,255" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Center" VerticalAlignment="Center" Width="396"  Height="163" Grid.ColumnSpan="3" Grid.Column="1"/>
-        <GroupBox x:Name="groupBox_Copy" Header="VTM300" HorizontalAlignment="Left" Margin="3,366,0,0" VerticalAlignment="Top" Height="72" Width="180" Grid.Column="1" Grid.ColumnSpan="2">
-            <CheckBox x:Name="CHK_EJECT_DIRECT" Content="Back" HorizontalAlignment="Left" Margin="112,17,0,0" VerticalAlignment="Top"/>
+        <GroupBox x:Name="groupBox_Copy" Header="VTM" HorizontalAlignment="Left" Margin="3,366,0,0" VerticalAlignment="Top" Height="72" Width="210" Grid.Column="1" Grid.ColumnSpan="2">
+            <ComboBox x:Name="COMBO_EJECT_DIRECTION" HorizontalAlignment="Right" Margin="0,4,8,0" VerticalAlignment="Top" Width="183" SelectedIndex="0">
+                <ComboBoxItem Content="eject backwarding- force"/>
+                <ComboBoxItem Content="eject forwarding- force"/>
+                <ComboBoxItem Content="eject backwarding stop- force"/>
+                <ComboBoxItem Content="eject forwarding stop- force"/>
+                <ComboBoxItem Content="eject backwarding"/>
+                <ComboBoxItem Content="eject forwarding"/>
+                <ComboBoxItem Content="eject backwarding stop"/>
+                <ComboBoxItem Content="eject forwarding stop"/>
+                <ComboBoxItem Content="eject backwarding by steps"/>
+                <ComboBoxItem Content="eject forwarding by steps"/>
+            </ComboBox>
         </GroupBox>
-        <Button x:Name="BTN_EJECT_PAPER" Content="EjectPaper" HorizontalAlignment="Left" Margin="20,396,0,0" VerticalAlignment="Top" Width="86" Grid.Column="1" Click="BTN_EJECT_PAPER_Click" Height="19" Grid.ColumnSpan="2" />
+        <Button x:Name="BTN_EJECT_PAPER" Content="EjectPaper" HorizontalAlignment="Left" Margin="44,413,0,0" VerticalAlignment="Top" Width="86" Grid.Column="1" Click="BTN_EJECT_PAPER_Click" Height="19" Grid.ColumnSpan="2" />
         <Button x:Name="BTN_EXIT" Content="X" Grid.Column="2" HorizontalAlignment="Left" Margin="303,-74,0,497" VerticalAlignment="Bottom" Width="18" Background="#FFDE2525" BorderBrush="#FF9B9292" Foreground="#FFF3EDED" Height="19" Grid.ColumnSpan="3" />
 
         <Image x:Name="PIC_2" Margin="1,197,12,82" RenderTransformOrigin="0.846,0.507" HorizontalAlignment="Center" VerticalAlignment="Center" Width="396" Height="163" Grid.ColumnSpan="3" Grid.Column="1" />

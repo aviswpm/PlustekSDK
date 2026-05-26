@@ -471,7 +471,7 @@ class WebFxScanScanner {
         newParamObj[fixedKey] = fixedValue;
       } else {
         // Unsupported alias inputs will be continue.
-        newParamObj[key] = fixParamObj[key]
+        newParamObj[key] = fixParamObj[key];
       }
     });
     return newParamObj;
@@ -599,7 +599,7 @@ class WebFxScanServer {
     this.state.mode = mode;
   }
 
-  version = "1.1.9.25224";
+  version = "1.1.10.26064";
   state = {
     socket: null,
     ip: "",
@@ -986,6 +986,8 @@ class WebFxScanServer {
       port = "17778",
       errorCallback,
       closeCallback,
+      eventCallback,
+      ipExceptionCallback,
     } = props;
 
     return new Promise((resolve, reject) => {
@@ -1105,11 +1107,20 @@ class WebFxScanServer {
           self.devLog("[ScanLib] websocket onmessage event.data:", event.data);
           const fixData = WebFxScanUtility.sdkV2MessageParser(event.data);
           const { type, func, data } = fixData;
-          const { event_code = 0 } = data;
+          const { event_code = null } = data;
 
           // collect messgae for dev
           if (typeof self.cache.socketMsgCollector === "function") {
             self.cache.socketMsgCollector(event.data, "down");
+          }
+
+          // trigger event callback if provided
+          if (typeof eventCallback === "function" && event_code !== null) {
+            eventCallback(event_code, fixData);
+          }
+
+          if (type === "callback" && func === "LIBWFX_NOTIFY_EXCEPTION") {
+            ipExceptionCallback(fixData);
           }
 
           // map apiList then excute callback
@@ -1236,6 +1247,7 @@ class WebFxScanServer {
             apiItem,
           })
         );
+        return;
       }
 
       const {
@@ -1246,13 +1258,18 @@ class WebFxScanServer {
         ocrOption,
         exportOption,
       } = WebFxScanScanner.getOptions();
-      const options = [];
-      szDevicesList.map((device, idx) => {
-        const sz = szSerialList?.[idx];
-        const type = devices[device];
-        const confEnum = scannerOption[type];
-        let v2ScannerOption = false;
-        (async () => {
+      
+      // 串行處理每個設備的 getDeviceCap 調用
+      const processDevicesSequentially = async () => {
+        const options = [];
+        
+        for (let idx = 0; idx < szDevicesList.length; idx++) {
+          const device = szDevicesList[idx];
+          const sz = szSerialList?.[idx];
+          const type = devices[device];
+          const confEnum = scannerOption[type];
+          let v2ScannerOption = false;
+          
           try {
             const deviceCap = await self.getDeviceCap({
               deviceName: device,
@@ -1261,7 +1278,7 @@ class WebFxScanServer {
             self.devLog("[ScanLib] get device cap: ", deviceCap);
             v2ScannerOption = data;
           } catch (error) {
-            self.devLog("[ScanLib] v2ScannerOption error:", v2ScannerOption);
+            self.devLog("[ScanLib] v2ScannerOption error:", error);
           }
 
           options.push({
@@ -1273,16 +1290,30 @@ class WebFxScanServer {
             ...exportOption,
             ...(v2ScannerOption ? v2ScannerOption : confEnum),
           });
+        }
+        
+        return options;
+      };
 
-          self.promiseResolve(
+      // 串行處理所有設備，然後 resolve
+      processDevicesSequentially().then((options) => {
+        self.promiseResolve(
+          apiItem,
+          WebFxScanUtility.successResponse({
+            message: "OK",
+            data: { options },
             apiItem,
-            WebFxScanUtility.successResponse({
-              message: "OK",
-              data: { options },
-              apiItem,
-            })
-          );
-        })();
+          })
+        );
+      }).catch((error) => {
+        self.promiseReject(
+          apiItem,
+          WebFxScanUtility.failureResponse({
+            errCode: 9999,
+            message: error,
+            apiItem,
+          })
+        );
       });
     } catch (error) {
       self.promiseReject(
@@ -1961,23 +1992,26 @@ class WebFxScanServer {
           const { fullName, ext } = WebFxScanUtility.pathParser(name);
           const fixedBase64 = WebFxScanUtility.base64Parser(base64, ext);
           self.devLog("[ScanLib] autoScanCallback trigger.");
-          self.cache.autoScanCallback({
-            fileName: fullName,
-            base64: fixedBase64,
-            ocrText: recognizedata
-          }, err_code);
+          self.cache.autoScanCallback(
+            {
+              fileName: fullName,
+              base64: fixedBase64,
+              ocrText: recognizedata,
+            },
+            err_code
+          );
         }
 
-        if (
-          err_code !== 0 &&
-          !apiItem.isActive
-        ) {
+        if (err_code !== 0 && !apiItem.isActive) {
           self.devLog("[ScanLib] autoScanCallback failed trigger.");
-          self.cache.autoScanCallback({
-            fileName: "",
-            base64: "",
-            ocrText: ""
-          }, err_code);
+          self.cache.autoScanCallback(
+            {
+              fileName: "",
+              base64: "",
+              ocrText: "",
+            },
+            err_code
+          );
         }
       }
 
@@ -2509,15 +2543,19 @@ class WebFxScan {
       port = "",
       errorCallback = () => {},
       closeCallback = () => {},
+      eventCallback = () => {},
+      ipExceptionCallback = () => {},
     } = props;
     if (
       typeof errorCallback !== "function" ||
-      typeof closeCallback !== "function"
+      typeof closeCallback !== "function" ||
+      typeof eventCallback !== "function" ||
+      typeof ipExceptionCallback !== "function"
     ) {
       WebFxScanUtility.throwError({
         errCode: 9010,
         message:
-          "errorCallback or closeCallback is not function. It require function type.",
+          "errorCallback or closeCallback or eventCallback or ipExceptionCallback is not function. It require function type.",
       });
     }
     if (typeof ip !== "string" || typeof port !== "string") {
@@ -2532,6 +2570,8 @@ class WebFxScan {
       port,
       errorCallback,
       closeCallback,
+      eventCallback,
+      ipExceptionCallback,
     });
   }
 
@@ -2639,11 +2679,19 @@ class WebFxScan {
 
   ejectPaper(props) {
     const { isBackward = false } = props;
-    if (typeof isBackward !== "boolean") {
+    if (typeof isBackward !== "boolean" && typeof isBackward !== "string") {
       WebFxScanUtility.throwError({
         errCode: 9010,
-        message: "isBackward is not boolean. It require boolean type.",
+        message: "isBackward is not valid parameter. It require boolean or string type.",
       });
+    }
+    if (typeof isBackward === "string") {
+      if (isBackward !== "EJECT_FORWARDING" && isBackward !== "EJECT_BACKWARDING" && isBackward !== "EJECT_BACKWARDINGS" && isBackward !== "EJECT_FORWARDINGS" && isBackward !== "EJECT_FORWARDING_BY_STEPS" && isBackward !== "EJECT_BACKWARDING_BY_STEPS" && isBackward !== "EJECT_FORWARDING_FORCE" && isBackward !== "EJECT_BACKWARDING_FORCE" && isBackward !== "EJECT_BACKWARDINGS_FORCE" && isBackward !== "EJECT_FORWARDINGS_FORCE") {
+        WebFxScanUtility.throwError({
+          errCode: 9010,
+          message: "isBackward is not valid parameter. It require EJECT_FORWARDING, EJECT_BACKWARDING, EJECT_BACKWARDINGS or EJECT_FORWARDINGS type.",
+        });
+      }
     }
     return this.serverInstance.ejectPaper({ isBackward });
   }

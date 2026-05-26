@@ -36,6 +36,7 @@ namespace LibWFXDemo_CSharp
                 label_cal_normal_2.Visibility = Visibility.Hidden;
                 label_cal_xmini.Visibility = Visibility.Hidden;
                 label_init.Visibility = Visibility.Hidden;
+
             }
             else if (labelName == "Calibrate_xmini")  // Calibrate_normal  Scan")
             {

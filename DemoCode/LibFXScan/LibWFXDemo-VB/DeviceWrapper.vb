@@ -76,6 +76,10 @@ Public Class DeviceWrapper
         LIBWFX_ERRCODE_SPECIFIC_AP_OPENING = 1015       REM *< The unauthorized program is running
         LIBWFX_ERRCODE_PARM_VALUE_MISMATCH = 1016       REM *< Undefined parameter value appears in command
         LIBWFX_ERRCODE_INVALID_FILE_FORMAT = 1017       REM *< Only image files(JPG, BMP, PNG) are allowed When Using "MergePdf"
+        LIBWFX_ERRCODE_INIT_DLL_NOT_FOUND = 1018        REM *< Failed To load DLL because the file was Not found
+        LIBWFX_ERRCODE_INIT_DLL_LOAD_FAILED = 1019      REM *< DLL file exists but failed To load (may be corrupted Or incompatible)
+        LIBWFX_ERRCODE_API_BUSY = 1020                  REM *< API Is busy processing the previous request
+        LIBWFX_ERRCODE_ONLY_SUPPORT_X64 = 1021          REM *< Only support X64
     End Enum
 
     Public Enum ENUM_LIBWFX_EVENT_CODE
@@ -117,7 +121,15 @@ Public Class DeviceWrapper
 
     Public Enum ENUM_LIBWFX_EJECT_DIRECTION
         LIBWFX_EJECT_FORWARDING = 1
-        LIBWFX_EJECT_BACKWARDING = 2
+        LIBWFX_EJECT_BACKWARDINGS = 2
+        LIBWFX_EJECT_BACKWARDING = 3
+        LIBWFX_EJECT_FORWARDINGS = 4
+        LIBWFX_EJECT_FORWARDINGD = 5
+        LIBWFX_EJECT_BACKWARDINGD = 6
+        LIBWFX_EJECT_BACKWARDINGSD = 7
+        LIBWFX_EJECT_FORWARDINGSD = 8
+        LIBWFX_EJECT_FORWARDING_BY_STEPS = 10
+        LIBWFX_EJECT_BACKWARDING_BY_STEPS = 11
     End Enum
 
     Public Enum ENUM_LIBWFX_COLOR_MODE
@@ -134,6 +146,16 @@ Public Class DeviceWrapper
     Public Enum ENUM_PERMISSION_DATA_TYPE
         LIBWFX_DATA_TYPE_PERMISSION = 0
         LIBWFX_DATA_TYPE_REGINFO = 1
+    End Enum
+
+    Public Enum ENUM_SOURCETYPE
+        UNKNOWN = 0
+        ADF = 1
+        SHEETFED = 2
+        ADF_SHEETFED = 3
+        FLATBED = 4
+        ADF_FLATBED = 5
+        CAMERA = 6
     End Enum
 
     <StructLayout(LayoutKind.Sequential)>
@@ -203,15 +225,13 @@ Public Class DeviceWrapper
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Sub EditCommand(ByVal szCommand As String, ByRef pCommandOut As IntPtr)
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
-    Public Delegate Function LibWFX_GetCertificatePermission(ByRef szPermissionTypeList As IntPtr, ByVal enDataType As ENUM_PERMISSION_DATA_TYPE) As ENUM_LIBWFX_ERRCODE
+    Public Delegate Function LibWFX_GetCertificatePermission(ByVal szPermissionTypeList As IntPtr, ByVal enDataType As ENUM_PERMISSION_DATA_TYPE) As ENUM_LIBWFX_ERRCODE
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_RecycleSaveFolder() As ENUM_LIBWFX_ERRCODE
     <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
-    Public Delegate Function LibWFX_AsynchronizeReadImage(ByVal szFilePathIn As String, ByVal pfnLibWFXCBIn As LIBWFXCB, pUserDefIn As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
-    Public Delegate Function LibWFX_SynchronizeReadImage(ByVal szRequestCmdIn As String, ByVal szFilePathIn As String, ByRef szScanImageList As IntPtr, ByRef szOCRResultList As IntPtr, ByRef szExceptionRet As IntPtr) As ENUM_LIBWFX_ERRCODE
-    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
     Public Delegate Function LibWFX_WriteAPLog(ByVal szMsg As String) As ENUM_LIBWFX_ERRCODE
+    <UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet:=CharSet.Unicode)>
+    Public Delegate Function LibWFX_GetDeviceCapability(ByVal szDeviceName As String, ByRef enSource As Integer, ByRef bDuplex As Integer, ByRef bJpegTransfer As Integer, ByRef nDPI As Integer, ByRef nMaxPaperSizeX As Integer, ByRef nMaxPaperSizeY As Integer, ByRef bLongPaper As Integer) As ENUM_LIBWFX_ERRCODE
 
     Public m_pfnLibWFX_Init As LibWFX_Init
     Public m_pfnLibWFX_InitEx As LibWFX_InitEx
@@ -235,6 +255,7 @@ Public Class DeviceWrapper
     Public m_pfnLibWFX_GetCertificatePermission As LibWFX_GetCertificatePermission
     Public m_pfnLibWFX_RecycleSaveFolder As LibWFX_RecycleSaveFolder
     Public m_pfnLibWFX_WriteAPLog As LibWFX_WriteAPLog
+    Public m_pfnLibWFX_GetDeviceCapability As LibWFX_GetDeviceCapability
 
     Private Const LOAD_LIBRARY_SEARCH_USER_DIRS As Integer = &H400
     Private Const LOAD_LIBRARY_SEARCH_SYSTEM32 As Integer = &H800
@@ -258,7 +279,7 @@ Public Class DeviceWrapper
         hLibModule = LoadLibrary(szLibDLLPath)
         hCommandModule = LoadLibrary(szCommandDLLPath)
 
-		If hLibModule = IntPtr.Zero Or hCommandModule = IntPtr.Zero Then
+        If hLibModule = IntPtr.Zero Or hCommandModule = IntPtr.Zero Then
             Dim keyNameLib As String
             Dim keyNameSDK As String
 
@@ -368,6 +389,9 @@ Public Class DeviceWrapper
 
             pFun = GetProcAddress(hLibModule, "LibWFX_WriteAPLog")
             m_pfnLibWFX_WriteAPLog = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(LibWFX_WriteAPLog)), LibWFX_WriteAPLog)
+
+            pFun = GetProcAddress(hLibModule, "LibWFX_GetDeviceCapability")
+            m_pfnLibWFX_GetDeviceCapability = DirectCast(Marshal.GetDelegateForFunctionPointer(pFun, GetType(LibWFX_GetDeviceCapability)), LibWFX_GetDeviceCapability)
 
         Else
             MessageBox.Show("Library loading failed. Please ensure that the SDK installation package is correctly installed!", "Warning")

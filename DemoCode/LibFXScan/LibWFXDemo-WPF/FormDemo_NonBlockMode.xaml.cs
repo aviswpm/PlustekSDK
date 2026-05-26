@@ -1,4 +1,5 @@
-﻿using System;
+﻿//#define BC_USDL_FIXFIELDVALUE   //option
+using System;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -6,6 +7,7 @@ using System.Windows.Media.Imaging;
 using System.ComponentModel;
 using System.Drawing;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using System.Runtime.InteropServices;
 using System.IO;
 using System.Windows.Interop;
@@ -26,11 +28,12 @@ namespace LibWFXDemo_CSharp
         FormWaitMsg formWaitMsg = null;
         static DeviceWrapper.LIBWFXEVENTCB m_CBEvent;
         static DeviceWrapper.LIBWFXCB m_CBNotify;
-        int m_nCount;
+        int m_nCount = 1;
 
         private List<String> m_szlistDevice;
         private List<String> m_szlistFile;
         private Boolean m_bIPexception;
+        private Boolean m_bIsStreamMode = false;
         private int m_nWarmupTotalTime;
         private int m_MaxCMDItems;
         private string m_command;
@@ -42,7 +45,7 @@ namespace LibWFXDemo_CSharp
             switch (enEventCode)
             {
                 case ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_PAPER_DETECTED:
-                    if (nParam == 0)
+                    if (nParam == 3)
                         form.DispatcherWriteLog("LIBWFX_EVENT_PAPER_DETECTED");
                     else if (nParam == 1)
                         form.DispatcherWriteLog("LIBWFX_EVENT_PASSPORT_DETECTED");
@@ -76,7 +79,14 @@ namespace LibWFXDemo_CSharp
                     form.DispatcherWriteLog("LIBWFX_EVENT_ALL_SENSOR_DETECTED");
                     break;
                 default:
-                    form.DispatcherWriteLog(@"[ Notice ] " + enEventCode.ToString() + " - [" + ((int)enEventCode).ToString() + "]");
+                    if (nParam == -1)
+                        form.DispatcherWriteLog(@"[ Notice ] Undefined Event");
+                    else
+                    {
+                        if (enEventCode == ENUM_LIBWFX_EVENT_CODE.LIBWFX_EVENT_PAPER_FEEDING_ERROR)
+                            form.HandleSetAutoScanOff();
+                        form.DispatcherWriteLog(@"[ Notice ] " + enEventCode.ToString() + " - [" + ((int)enEventCode).ToString() + "]");
+                    }
                     break;
             }
         }
@@ -94,10 +104,7 @@ namespace LibWFXDemo_CSharp
                 {
                     if (form.m_command.IndexOf("\"rawdata\":true") == -1)
                     {
-                        String szPath = Marshal.PtrToStringUni(pParam1);
-                        if (File.Exists(szPath) == false)
-                            return;
-
+                        String szPath = Marshal.PtrToStringUni(pParam1);                   
                         form.DispatcherWriteLog(szPath);
                         if (!szPath.Contains(".pdf") && !szPath.Contains(".tif") && !szPath.ToUpper().Contains("_PHOTO"))
                         {
@@ -113,7 +120,13 @@ namespace LibWFXDemo_CSharp
 
                 if (pParam2 != IntPtr.Zero)
                 {
-                    String szJson = Marshal.PtrToStringUni(pParam2);
+                    string szJson = Marshal.PtrToStringUni(pParam2) ?? "";
+#if BC_USDL_FIXFIELDVALUE
+                    if (szJson.Contains("\"IIN\":\"636028\""))
+                    {                       
+                        szJson = form.DispatcherFixUSDLFieldValue(Marshal.PtrToStringUni(pParam1), szJson);                     
+                    }
+#endif
                     form.DispatcherWriteLog(szJson);
                 }
             }
@@ -127,7 +140,7 @@ namespace LibWFXDemo_CSharp
             }
             else if (enNotifyCode == ENUM_LIBWFX_NOTIFY_CODE.LIBWFX_NOTIFY_END)
             {
-                form.DispatcherWriteLog("Status:[Scan End]");
+                form.DispatcherWriteLog("Status:[Scan End]");                
 #if DoResetIfExcept
                 if (form.m_bIPexception)
 		        {
@@ -221,7 +234,6 @@ namespace LibWFXDemo_CSharp
                 bmpImage.Palette = palette;
             }
 
-            m_nCount++;
             BitmapImage bitmapImage = new BitmapImage();
             using (System.IO.MemoryStream ms = new System.IO.MemoryStream())
             {
@@ -238,9 +250,9 @@ namespace LibWFXDemo_CSharp
 
             //HandleDrawImage(bmpImage);
             if (m_nCount % 2 == 1)
-                HandleDrawImage(bitmapImage, true);
+                HandleDrawImage(bitmapImage, ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_FRONT);
             else
-                HandleDrawImage(bitmapImage, false);
+                HandleDrawImage(bitmapImage, ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_BACK);
 
             if (copyRawData != null)
             {
@@ -272,12 +284,10 @@ namespace LibWFXDemo_CSharp
             ShowDlg(true, "Init");
             if (m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") == true)
             {
-
-                MessageBox.Show("Status:[Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!]", "Warning");
-                
+                ShowDlg(false, "Init");
+                MessageBox.Show("Status:[Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!]", "Warning");               
                 DispatcherWriteLog(@"[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING.ToString() + " - [" + ((int)ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING).ToString() + "]");
                 DispatcherWriteLog(@"[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT.ToString() + " - [" + ((int)ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT).ToString() + "]");
-                ShowDlg(false, "Init");
                 return;
             }
 
@@ -356,6 +366,47 @@ namespace LibWFXDemo_CSharp
             }
         }
 
+        private string DispatcherFixUSDLFieldValue(String szFilePath, String szOCRData)
+        {
+            if (!Dispatcher.CheckAccess())
+            {
+                return (string)Dispatcher.Invoke((Func<string>)(() => FixUSDLFieldValueToJsonFile(szFilePath, szOCRData)));
+            }
+            else
+            {
+                return FixUSDLFieldValueToJsonFile(szFilePath, szOCRData);
+            }
+        }
+
+        private string FixUSDLFieldValueToJsonFile(String szFilePath, String szOCRData)
+        {
+            try
+            {
+                string szdirectory = Path.GetDirectoryName(szFilePath) ?? "";
+                string szJsonPath = szdirectory + "\\" + Path.GetFileNameWithoutExtension(szFilePath) + "_OCR.json";
+                JObject objroot = JObject.Parse(szOCRData);
+                var dataToken = objroot.SelectToken("PDF417.Data") as JObject;
+
+                if (dataToken != null)
+                {
+                    var cardExpiry = dataToken["CardExpiryDate"];
+                    if (cardExpiry != null)
+                    {
+                        dataToken["ExpiryDateExt"] = "20" + cardExpiry.ToString();
+                        string szfinalJson = objroot.ToString(Newtonsoft.Json.Formatting.None);
+                        if (File.Exists(szJsonPath))                        
+                            File.WriteAllText(szJsonPath, szfinalJson);                      
+                        return szfinalJson;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                DispatcherWriteLog("[Error] JSON Process Fail: " + ex.Message);
+            }
+            return szOCRData;
+        }
+
         private void SetJsonCmd(String szDevName)
         {
             string szDefJson = "";
@@ -364,69 +415,36 @@ namespace LibWFXDemo_CSharp
             {
                 return;
             }
-            else if (szDevName == "A61" || szDevName == "A62" || szDevName == "A63" || szDevName == "A64" || szDevName == "A65" || szDevName == "A66" || szDevName == "J6102")
-            {
-                szDefJson += "{\"device-name\":\"";
-                szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"Camera\",\"autoscan\":true,\"recognize-type\":\"passport\"}";
-            }
-            else if (szDevName == "7C1U" || szDevName == "7C8U" || szDevName == "7C9U" || szDevName == "7CAU" || szDevName == "773U" || szDevName == "7CCU")
-            {
-                szDefJson += "{\"device-name\":\"";
-                szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"Sheetfed-Duplex\",\"autoscan\":true,\"recognize-type\":\"passport\"}";
-            }
-            else if (szDevName == "776U" || szDevName == "777U" || szDevName == "778U" || szDevName == "FE7010_FE7011")
-            {
-                szDefJson += "{\"device-name\":\"";
-                szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"Sheetfed-Duplex\"}";
-            }
-            else if (szDevName == "74RU" || szDevName == "74BU" || szDevName == "7P1U" || szDevName == "M11U" || szDevName == "7B3U" || szDevName == "M12U" || szDevName == "FE5020")
-            {
-                szDefJson += "{\"device-name\":\"";
-                szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"Sheetfed-Front\",\"autoscan\":true}";
-            }
-            else if (szDevName == "256U" ||
-                     szDevName == "258U" ||
-                     szDevName == "258U_259U" ||
-                     szDevName == "25AU" ||
-                     szDevName == "271U" ||
-                     szDevName == "273U" ||
-                     szDevName == "273U_274U" ||
-                     szDevName == "275U" ||
-                     szDevName == "276U" ||
-                     szDevName == "261U" ||
-                     szDevName == "BAG" ||
-                     szDevName == "7K1U" ||
-                     szDevName == "6C6U" ||
-                     szDevName == "BB1U" ||
-                     szDevName == "BAGU" ||
-                     szDevName == "2B2U" ||
-                     szDevName == "2B3U" ||
-                     szDevName == "7N1U" ||
-                     szDevName == "2D1U" ||
-                     szDevName == "2C1U" ||
-                     szDevName == "797U" ||
-                     szDevName == "7K7U" ||
-                     szDevName == "2G1U" ||
-                     szDevName == "2G2U" ||
-                     szDevName == "678U" ||
-                     szDevName == "7K8U" ||
-                     szDevName == "B85U" ||
-                     szDevName == "2D3U")
-            {
-                szDefJson += "{\"device-name\":\"";
-                szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"Flatbed\"}";
-            }
             else
             {
                 szDefJson += "{\"device-name\":\"";
                 szDefJson += szDevName;
-                szDefJson += "\",\"source\":\"ADF-Duplex\"}";
-            }
+
+                ENUM_SOURCETYPE enSource;
+                bool bDuplex = false, bJpegTransfer = false, bLongPaper = false;
+                int nDPI = 0, nMaxPaperSizeX = -1, nMaxPaperSizeY = -1;
+
+                m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_GetDeviceCapability(szDevName, out enSource, out bDuplex, out bJpegTransfer, out nDPI, out nMaxPaperSizeX, out nMaxPaperSizeY, out bLongPaper);
+
+                if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
+                {
+                    DispatcherWriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
+                    return;
+                }
+                else
+                {
+                    if (enSource == ENUM_SOURCETYPE.CAMERA)
+                        szDefJson += "\",\"source\":\"Camera\",\"autoscan\":true,\"recognize-type\":\"passport\"}";
+                    else if (enSource == ENUM_SOURCETYPE.FLATBED)
+                        szDefJson += "\",\"source\":\"Flatbed\"}";
+                    else if (enSource == ENUM_SOURCETYPE.SHEETFED)
+                        szDefJson += "\",\"source\":\"Sheetfed-Front\",\"autoscan\":true}";
+                    else if (enSource == ENUM_SOURCETYPE.ADF || enSource == ENUM_SOURCETYPE.ADF_FLATBED || enSource == ENUM_SOURCETYPE.ADF_SHEETFED)
+                        szDefJson += "\",\"source\":\"ADF-Duplex\",\"autoscan\":true}";
+                    else
+                        return;
+                }
+            }           
             COMBO_COMMAND.Items.Add(szDefJson);
             COMBO_COMMAND.SelectedIndex = 0;
         }
@@ -460,6 +478,9 @@ namespace LibWFXDemo_CSharp
 
         private bool SetCommandString(String szDevName, String szCommand)
         {
+            if (szCommand.Contains(szDevName) == false)
+                return false;
+
             string szFilePath = "C:\\ProgramData\\Plustek\\" + szDevName + "\\";
             if (!Directory.Exists(szFilePath))
                 Directory.CreateDirectory(szFilePath);
@@ -519,31 +540,33 @@ namespace LibWFXDemo_CSharp
             }
         }
 
-        private void HandleDrawImage(BitmapImage bitmapImage, bool bFront)
+        private void HandleDrawImage(BitmapImage bitmapImage, ENUM_SHOW_PICTURE_MODE enMode)
         {
             if (!Dispatcher.CheckAccess())
             {
-                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action<BitmapImage, bool>(UpdatePreview), bitmapImage, bFront);
+                Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action<BitmapImage, ENUM_SHOW_PICTURE_MODE>(UpdatePreview), bitmapImage, enMode);
             }
             else
             {
-                UpdatePreview(bitmapImage, bFront);
+                UpdatePreview(bitmapImage, enMode);
             }
         }
 
-        private void UpdatePreview(BitmapImage bitmapImage, bool bFront)
+        private void UpdatePreview(BitmapImage bitmapImage, ENUM_SHOW_PICTURE_MODE enMode)
         {
-            if (bFront == true)
+            if (enMode == ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_FRONT)
             {
                 PIC_1.BeginInit();
                 PIC_1.Source = bitmapImage;
                 PIC_1.EndInit();
+                m_nCount++;
             }
-            else
+            else if (enMode == ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_BACK)
             {
                 PIC_2.BeginInit();
                 PIC_2.Source = bitmapImage;
                 PIC_2.EndInit();
+                m_nCount++;
             }
         }
 
@@ -576,38 +599,27 @@ namespace LibWFXDemo_CSharp
                 BTN_SET_Click(null, null);
             }
         }
-
-        private void HandleEjectPaper(ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect)
+        private void HandleSetAutoScanOff()
         {
-            if (!Dispatcher.CheckAccess())
+            Action doWork = () =>
             {
-                Dispatcher.BeginInvoke(new Action(() =>
+                string szCommand = (COMBO_COMMAND.Text ?? "")
+                    .Replace("\"autoscan\":true", "\"autoscan\":false");
+                //exclude VTM300
+                if ((szCommand.Contains("\"device-name\":\"776U\"") || szCommand.Contains("\"device-name\":\"778U\"")) && !szCommand.Contains("\"fastscan\":true"))
+                    return;
+                m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_SetProperty(szCommand, null, new WindowInteropHelper(this).Handle);
+                if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
                 {
-                    IntPtr pstr;
-                    m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, out pstr);
-                    string szErrorMsg = Marshal.PtrToStringUni(pstr);
+                    DispatcherWriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
+                    return;
+                }
+            };
 
-                    if (szErrorMsg.Length > 0)
-                        WriteLog(szErrorMsg);
-                    else if (m_enErrCode == ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
-                        WriteLog(@"Status:[LibWFX_EjectPaperControl Success]");
-                    else
-                        WriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
-                }));
-            }
+            if (Dispatcher.CheckAccess())
+                doWork();
             else
-            {
-                IntPtr pstr;
-                m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, out pstr);
-                string szErrorMsg = Marshal.PtrToStringUni(pstr);
-
-                if (szErrorMsg.Length > 0)
-                    WriteLog(szErrorMsg);
-                else if (m_enErrCode == ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
-                    WriteLog(@"Status:[LibWFX_EjectPaperControl Success]");
-                else
-                    WriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
-            }
+                Dispatcher.BeginInvoke(doWork);
         }
 
         private void BTN_REFRESH_Click(object sender, RoutedEventArgs e)
@@ -649,6 +661,12 @@ namespace LibWFXDemo_CSharp
 
         private void BTN_SET_Click(object sender, RoutedEventArgs e)
         {
+            if (m_bIsStreamMode)
+            {
+                MessageBox.Show("Please close the live stream window before setting the command.");
+                return;
+            }
+
             if (COMBO_COMMAND.SelectedIndex == -1)
                 m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_SetProperty(COMBO_COMMAND.Text, m_CBEvent, new WindowInteropHelper(this).Handle);
             else
@@ -794,16 +812,57 @@ namespace LibWFXDemo_CSharp
         private void BTN_EJECT_PAPER_Click(object sender, RoutedEventArgs e)
         {
             IntPtr pstr;
-            m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_EjectPaperControlWithMsg(CHK_EJECT_DIRECT.IsChecked == true ? ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING : ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING, out pstr);
+            String szCommand;
 
-            string szErrorMsg = Marshal.PtrToStringUni(pstr);
-
-            if (szErrorMsg.Length > 0)
-                DispatcherWriteLog(szErrorMsg);
-            else if (m_enErrCode == ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
-                DispatcherWriteLog(@"Status:[LibWFX_EjectPaperControl Success]");
+            if (COMBO_COMMAND.SelectedIndex == -1)
+                szCommand = COMBO_COMMAND.Text;
             else
+                szCommand = COMBO_COMMAND.SelectedItem.ToString();
+
+            m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_SetProperty(szCommand, null, new WindowInteropHelper(this).Handle);
+            if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
+            {
                 DispatcherWriteLog(@"[ Warning ] " + m_enErrCode.ToString() + " - [" + ((int)m_enErrCode).ToString() + "]");
+                return;
+            }
+
+            ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject backwarding- force"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject forwarding- force"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject backwarding stop- force"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGS;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject forwarding stop- force"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGS;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject backwarding"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGD;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject forwarding"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGD;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject backwarding stop"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGSD;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject forwarding stop"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGSD;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject backwarding by steps"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING_BY_STEPS;
+            else if (COMBO_EJECT_DIRECTION.SelectionBoxItem.ToString().Equals("eject forwarding by steps"))
+                enEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING_BY_STEPS;
+
+            m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, out pstr);
+
+            string szErrorMsg = (pstr == IntPtr.Zero) ? "" : Marshal.PtrToStringUni(pstr) ?? "";
+
+            if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
+            {
+                IntPtr pErrorCode = Marshal.AllocHGlobal(260);
+                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(m_enErrCode, pErrorCode);
+                szErrorMsg = (pstr == IntPtr.Zero) ? "" : Marshal.PtrToStringUni(pErrorCode) ?? "";
+                DispatcherWriteLog(@"[ Warning ] " + szErrorMsg + " - [" + ((int)m_enErrCode).ToString() + "]");
+            }
+            else if (!string.IsNullOrEmpty(szErrorMsg))
+                DispatcherWriteLog(szErrorMsg);
+            else
+                DispatcherWriteLog(@"Status:[LibWFX_EjectPaperControl Success]");
         }
 
         private void BTN_EDIT_Click(object sender, RoutedEventArgs e)
@@ -821,6 +880,11 @@ namespace LibWFXDemo_CSharp
 
             if ((szRtn != String.Empty) && (szRtn.Length > 0))
             {
+                if (szRtn.Contains("Invalid JSON format"))
+                {
+                    MessageBox.Show("Invalid JSON format", "Warning");
+                    return;
+                }
                 List<string> commandLists = new List<string>();
                 commandLists.Add(szRtn);
                 for (int idx = 0; idx < COMBO_COMMAND.Items.Count; idx++)
@@ -843,7 +907,8 @@ namespace LibWFXDemo_CSharp
 
         private void COMBO_DEVICE_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            SetJsonCmd(COMBO_DEVICE.SelectedItem.ToString());
+            if (COMBO_DEVICE.SelectedItem != null)
+                SetJsonCmd(COMBO_DEVICE.SelectedItem.ToString());
         }
 
         private void DispatcherLoadImage(String strPath)
@@ -861,8 +926,8 @@ namespace LibWFXDemo_CSharp
 
         private void LoadImage(String strPath)
         {
-            m_nCount++;
-
+            if (!File.Exists(strPath))
+                return;
             FileStream fstream = new FileStream(strPath, FileMode.Open);
             BitmapImage bitmap = new BitmapImage();
             bitmap.BeginInit();
@@ -873,18 +938,18 @@ namespace LibWFXDemo_CSharp
 
             //HandleDrawImage(bmpImage);
             if (m_nCount % 2 == 1)
-                HandleDrawImage(bitmap, true);
+                HandleDrawImage(bitmap, ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_FRONT);
             else
-                HandleDrawImage(bitmap, false);
+                HandleDrawImage(bitmap, ENUM_SHOW_PICTURE_MODE.SHOW_PICTURE_BACK);
 
             GC.Collect();
         }
 
         private void GetCertificatePermission()
         {
-            IntPtr pstr;
+            IntPtr pstr = Marshal.AllocHGlobal(260);
 
-            ENUM_LIBWFX_ERRCODE enErrCode = m_DeviceWrapper.m_pfnLibWFX_GetCertificatePermission(out pstr, ENUM_PERMISSION_DATA_TYPE.LIBWFX_DATA_TYPE_REGINFO);
+            ENUM_LIBWFX_ERRCODE enErrCode = m_DeviceWrapper.m_pfnLibWFX_GetCertificatePermission(pstr, ENUM_PERMISSION_DATA_TYPE.LIBWFX_DATA_TYPE_REGINFO);
             if (enErrCode == ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
                 string szPermission = Marshal.PtrToStringUni(pstr);
@@ -903,6 +968,17 @@ namespace LibWFXDemo_CSharp
 
         private void BTN_SCAN_Click(object sender, RoutedEventArgs e)
         {
+            String szCommand;
+
+            if (COMBO_COMMAND.SelectedIndex == -1)
+                szCommand = COMBO_COMMAND.Text;
+            else
+                szCommand = COMBO_COMMAND.SelectedItem.ToString();
+            if (szCommand.IndexOf("\"recognize-type\":\"DocumentExtract\"") != -1)
+            {
+                MessageBox.Show("\"DocumentExtract\" is not supported in Non-Block Mode. Please modify LibWebFxScan.ini to enable Block Mode for this function.", "Warning");
+                return;
+            }
             m_enErrCode = m_DeviceWrapper.m_pfnLibWFX_StartScan(m_CBNotify, new WindowInteropHelper(this).Handle);
             if (m_enErrCode != ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
             {
@@ -958,6 +1034,6 @@ namespace LibWFXDemo_CSharp
                 formWaitMsg = null;
                 this.Show();
             }
-        }
+        }     
     }    
 }

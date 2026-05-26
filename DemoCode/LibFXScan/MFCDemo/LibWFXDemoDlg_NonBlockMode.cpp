@@ -15,14 +15,14 @@
 #include <fstream> 
 #include <vector>
 #include <thread>
+#include <algorithm>
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #endif
 
 #define DoResetIfExcept 0   //0:not do set+scan  1:do set+scan   when ip error
-
-
+#define BC_USDL_FIXFIELDVALUE 0  //option
 using namespace std;
 
 
@@ -38,10 +38,13 @@ CLibWFXDemoDlg_NonBlockMode::CLibWFXDemoDlg_NonBlockMode(CWnd* pParent /*=NULL*/
 	m_CalibrationDlg = NULL;
 	m_CalibrationXminiDlg = NULL;
 	m_InitDlg = NULL;
+	m_szEventMsg.Empty();
+	InitializeCriticalSection(&m_CriticalSecion);
 }
 
 CLibWFXDemoDlg_NonBlockMode::~CLibWFXDemoDlg_NonBlockMode()
 {
+	DeleteCriticalSection(&m_CriticalSecion);
 }
 
 void CLibWFXDemoDlg_NonBlockMode::DoDataExchange(CDataExchange* pDX)
@@ -75,6 +78,10 @@ BEGIN_MESSAGE_MAP(CLibWFXDemoDlg_NonBlockMode, CDialogEx)
 	ON_MESSAGE(WM_LIBWFX_CLEAN_DRAW, OnHandleCleanDraw)
 	ON_MESSAGE(WM_LIBWFX_CLOSEDEVICE, OnCloseDevice)
 	ON_MESSAGE(WM_LIBWFX_EJECTPAPER, OnEjectPaper)
+	ON_MESSAGE(WM_LIBWFX_WRITENOTIFYLOG, OnWriteNotifyLog)
+	ON_MESSAGE(WM_LIBWFX_SHOWIMAGE, OnShowImage)
+	ON_MESSAGE(WM_LIBWFX_SETAUTOSCANOFF, OnSetAutoScanOff)
+	ON_MESSAGE(WM_LIBWFX_FIXUSDLFIELDVALUE, OnFixUSDLFieldValueToJsonFile)
 	ON_BN_CLICKED(IDC_BUTTON_SCAN, &CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonScan)
 	ON_BN_CLICKED(IDC_BUTTON_RECYCLESAVEFOLDER, &CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonRecyclesavefolder)
 	ON_BN_CLICKED(IDC_BUTTON_MERGEPDF, &CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonMergepdf)
@@ -86,7 +93,6 @@ END_MESSAGE_MAP()
 void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCode, int nParam, void* pUserDef)
 {
 	CLibWFXDemoDlg_NonBlockMode* pLibWFXDemoDlg = (CLibWFXDemoDlg_NonBlockMode *)pUserDef;
-	static CString szButtonNum;
 #if 0
 	if (enEventCode == LIBWFX_EVENT_PAPER_DETECTED)
 	{
@@ -94,12 +100,11 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCo
 			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_STARTSCAN, NULL, NULL);
 	}
 #endif
-	CString szErr = L"";
 	switch (enEventCode)
 	{
 	case LIBWFX_EVENT_PAPER_DETECTED:
 		//pLibWFXDemoDlg->WriteLog(_T("LIBWFX_EVENT_PAPER_DETECTED"));
-		if (nParam == 0)
+		if (nParam == 3)
 			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("LIBWFX_EVENT_PAPER_DETECTED"), NULL);
 		else if (nParam == 1)
 			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("LIBWFX_EVENT_PASSPORT_DETECTED"), NULL);
@@ -108,26 +113,23 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCo
 		break;
 	case LIBWFX_EVENT_NO_PAPER:
 		//pLibWFXDemoDlg->WriteLog(_T("LIBWFX_EVENT_NO_PAPER"));
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_NO_PAPER", LIBWFX_EVENT_NO_PAPER);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_NO_PAPER", LIBWFX_EVENT_NO_PAPER);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_PAPER_JAM:
 		//pLibWFXDemoDlg->WriteLog(_T("LIBWFX_EVENT_PAPER_JAM"));		
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PAPER_JAM", LIBWFX_EVENT_PAPER_JAM);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_CLOSEDEVICE, NULL, NULL);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		theApp.m_pMainWnd->PostMessage(WM_LIBWFX_SETPROPERTY, NULL, NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PAPER_JAM", LIBWFX_EVENT_PAPER_JAM);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_MULTIFEED:
 		//pLibWFXDemoDlg->WriteLog(_T("LIBWFX_EVENT_MULTIFEED"));		
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_MULTIFEED", LIBWFX_EVENT_MULTIFEED);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_MULTIFEED", LIBWFX_EVENT_MULTIFEED);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_NO_CALIBRATION_DATA:
 		//pLibWFXDemoDlg->WriteLog(_T("LIBWFX_EVENT_NO_CALIBRATION_DATA"));	
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_NO_CALIBRATION_DATA", LIBWFX_EVENT_NO_CALIBRATION_DATA);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_NO_CALIBRATION_DATA", LIBWFX_EVENT_NO_CALIBRATION_DATA);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_WARMUP_COUNTDOWN:
 		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_SHOW_WARMUP, (WPARAM)nParam, NULL);
@@ -137,17 +139,15 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCo
 		break;
 	case LIBWFX_EVENT_BUTTON_DETECTED:
 		//when press the scan button on machine, it's callback the number of control panel
-		szButtonNum.Format(_T("%d"), nParam);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szButtonNum.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("%d"), nParam);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		theApp.m_pMainWnd->PostMessage(WM_LIBWFX_STARTSCAN, NULL, NULL);
 		break;
 	case LIBWFX_EVENT_PAPER_FEEDING_ERROR:
 		//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("LIBWFX_EVENT_PAPER_FEEDING_ERROR"), NULL);	
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PAPER_FEEDING_ERROR", LIBWFX_EVENT_PAPER_FEEDING_ERROR);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_CLOSEDEVICE, NULL, NULL);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		theApp.m_pMainWnd->PostMessage(WM_LIBWFX_SETPROPERTY, NULL, NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PAPER_FEEDING_ERROR", LIBWFX_EVENT_PAPER_FEEDING_ERROR);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_SETAUTOSCANOFF, NULL, NULL);
 		break;
 	case LIBWFX_EVENT_UVSECURITY_DETECTED:
 		if (nParam == 0)
@@ -165,33 +165,31 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCo
 		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("LIBWFX_EVENT_ALL_SENSOR_DETECTED"), NULL);
 		break;
 	case LIBWFX_EVENT_PLUG_UNPLUG:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PLUG_UNPLUG", LIBWFX_EVENT_PLUG_UNPLUG);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_PLUG_UNPLUG", LIBWFX_EVENT_PLUG_UNPLUG);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_COVER_OPEN:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_COVER_OPEN", LIBWFX_EVENT_COVER_OPEN);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_CLOSEDEVICE, NULL, NULL);
-		std::this_thread::sleep_for(std::chrono::milliseconds(1000));
-		theApp.m_pMainWnd->PostMessage(WM_LIBWFX_SETPROPERTY, NULL, NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_COVER_OPEN", LIBWFX_EVENT_COVER_OPEN);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_OVER_TIME_SCAN:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_OVER_TIME_SCAN", LIBWFX_EVENT_OVER_TIME_SCAN);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_OVER_TIME_SCAN", LIBWFX_EVENT_OVER_TIME_SCAN);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_CANCEL_SCAN:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CANCEL_SCAN", LIBWFX_EVENT_CANCEL_SCAN);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CANCEL_SCAN", LIBWFX_EVENT_CANCEL_SCAN);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_CAMERA_RGB_DISLOCATION:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CAMERA_RGB_DISLOCATION", LIBWFX_EVENT_CAMERA_RGB_DISLOCATION);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CAMERA_RGB_DISLOCATION", LIBWFX_EVENT_CAMERA_RGB_DISLOCATION);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	case LIBWFX_EVENT_CAMERA_TIMEOUT:
-		szErr.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CAMERA_TIMEOUT", LIBWFX_EVENT_CAMERA_TIMEOUT);
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szErr.GetString()), NULL);
+		pLibWFXDemoDlg->m_szEventMsg.Format(_T("[ Notice ] %s - [%d]"), L"LIBWFX_EVENT_CAMERA_TIMEOUT", LIBWFX_EVENT_CAMERA_TIMEOUT);
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(pLibWFXDemoDlg->m_szEventMsg.GetString()), NULL);
 		break;
 	default:
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("[ Notice ] Undefined Event"), NULL);
 		break;
 	}
 }
@@ -199,6 +197,7 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXEVENTCB(ENUM_LIBWFX_EVENT_CODE enEventCo
 void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode, void* pUserDef, void* pParam1, void* pParam2)
 {
 	CLibWFXDemoDlg_NonBlockMode* pLibWFXDemoDlg = (CLibWFXDemoDlg_NonBlockMode *)pUserDef;
+	EnterCriticalSection(&pLibWFXDemoDlg->m_CriticalSecion);
 
 	if (enNotifyCode == LIBWFX_NOTIFY_IMAGE_DONE)
 	{
@@ -211,12 +210,16 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 			if (szCommand.Find(_T("\"rawdata\":true")) == -1)
 			{
 				//pLibWFXDemoDlg->WriteLog((wchar_t *)pParam1);
-				static CString szFilePath;
-				szFilePath.Format(_T("%s"), (wchar_t *)pParam1);
+				CString szFilePath;
+				szFilePath.Format(_T("%s\r\n"), (wchar_t *)pParam1);
 				//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)pParam1, NULL);
-				pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szFilePath.GetString()), NULL);
+				pLibWFXDemoDlg->vecNotifyMsg.push_back(szFilePath.GetString());
+				//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITENOTIFYLOG, NULL, NULL);
 				if (!wcsstr((wchar_t *)pParam1, L".pdf") && !wcsstr((wchar_t *)pParam1, L".tif") && !wcsstr(CharUpper((wchar_t *)pParam1), L"_PHOTO"))
-					pLibWFXDemoDlg->ShowImage((wchar_t *)pParam1);
+				{
+					CString* pPath = new CString((wchar_t*)pParam1);
+					pLibWFXDemoDlg->PostMessage(WM_LIBWFX_SHOWIMAGE, 0, (LPARAM)pPath);
+				}
 			}
 			else
 			{
@@ -228,26 +231,44 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 		{
 			//pLibWFXDemoDlg->WriteLog((wchar_t *)pParam2);
 			//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)pParam2, NULL);
-			static CString szOCRResult;
-			szOCRResult.Format(_T("%s"), (wchar_t *)pParam2);
-			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szOCRResult.GetString()), NULL);
+			CString szOCRResult;
+			szOCRResult.Format(_T("%s\r\n"), (wchar_t *)pParam2);
+			//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szOCRResult.GetString()), NULL);
+			pLibWFXDemoDlg->vecNotifyMsg.push_back(szOCRResult.GetString());
+			//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITENOTIFYLOG, NULL, NULL);
 		}
 	}
 	else if (enNotifyCode == LIBWFX_NOTIFY_SHOWPATHONLY)
 	{
 		if (pParam1)
 		{
-			static CString szFilePath;
-			szFilePath.Format(_T("%s"), (wchar_t *)pParam1);
-			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szFilePath.GetString()), NULL);
+			CString szFilePath;
+			szFilePath.Format(_T("%s\r\n"), (wchar_t *)pParam1);
+			//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)const_cast<TCHAR *>(szFilePath.GetString()), NULL);
+			pLibWFXDemoDlg->vecNotifyMsg.push_back(szFilePath.GetString());
+			//pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITENOTIFYLOG, NULL, NULL);
 		}
 	}
 	else if (enNotifyCode == LIBWFX_NOTIFY_END)
 	{
-		CString szCommand;
-		(pLibWFXDemoDlg->GetDlgItem(IDC_COMBO_COMMAND))->GetWindowText(szCommand);
-		//pLibWFXDemoDlg->WriteLog(_T("Status:[Scan End]"));
-		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITELOG, (WPARAM)_T("Status:[Scan End]"), NULL);		
+#if	BC_USDL_FIXFIELDVALUE
+		bool bIsBCUSDL = std::any_of(pLibWFXDemoDlg->vecNotifyMsg.begin(), pLibWFXDemoDlg->vecNotifyMsg.end(), [&](const std::wstring& s) {
+			return s.find(L"\"IIN\":\"636028\"") != std::wstring::npos;
+		});
+		if (bIsBCUSDL)
+		{
+			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_FIXUSDLFIELDVALUE, (WPARAM)pLibWFXDemoDlg->vecNotifyMsg[0].c_str(), (LPARAM)pLibWFXDemoDlg->vecNotifyMsg[1].c_str());
+		}
+		else
+		{
+			pLibWFXDemoDlg->vecNotifyMsg.push_back(L"Status:[Scan End]\r\n");
+			pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITENOTIFYLOG, NULL, NULL);
+		}
+
+#else
+		pLibWFXDemoDlg->vecNotifyMsg.push_back(L"Status:[Scan End]\r\n");
+		pLibWFXDemoDlg->PostMessage(WM_LIBWFX_WRITENOTIFYLOG, NULL, NULL);
+#endif	
 #if DoResetIfExcept
 		if (pLibWFXDemoDlg->m_bIPexception)
 		{
@@ -278,6 +299,31 @@ void CLibWFXDemoDlg_NonBlockMode::LibWFXCB(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode,
 				pLibWFXDemoDlg->m_bIPexception = true;
 		}
 	}
+	LeaveCriticalSection(&pLibWFXDemoDlg->m_CriticalSecion);
+}
+
+BOOL CLibWFXDemoDlg_NonBlockMode::WriteNotifyLog()
+{
+	CString szContent;
+
+	GetDlgItem(IDC_EDIT_LOG)->GetWindowText(szContent);
+
+	for (int i = 0; i < vecNotifyMsg.size(); i++)
+	{
+		szContent.Append((wchar_t *)vecNotifyMsg.at(i).c_str());
+	}
+	GetDlgItem(IDC_EDIT_LOG)->SetWindowText(szContent);
+
+	((CEdit *)GetDlgItem(IDC_EDIT_LOG))->LineScroll(((CEdit *)GetDlgItem(IDC_EDIT_LOG))->GetLineCount());
+
+	CString szContent2;
+	for (int i = 0; i < vecNotifyMsg.size(); i++)
+	{
+		m_pfnLibWFX_WriteAPLog((wchar_t *)vecNotifyMsg.at(i).c_str());
+		szContent2.Append((wchar_t *)vecNotifyMsg.at(i).c_str());
+	}
+	vecNotifyMsg.clear();
+	return TRUE;
 }
 
 BOOL CLibWFXDemoDlg_NonBlockMode::InitLib(VOID)
@@ -482,6 +528,15 @@ BOOL CLibWFXDemoDlg_NonBlockMode::InitLib(VOID)
 		::FreeLibrary(m_hLibWFX);
 		return FALSE;
 	}
+
+	m_pfnLibWFX_GetDeviceCapability = (LIBWFX_GETDEVICECAPABILITY)::GetProcAddress(m_hLibWFX, LIBWFX_API_GETDEVICECAPABILITY);
+	if (m_pfnLibWFX_GetDeviceCapability == NULL)
+	{
+		WriteLog(_T("Status:[Get LIBWFX_API_GETDEVICECAPABILITY Fail]"));
+		::FreeLibrary(m_hLibWFX);
+		return FALSE;
+	}
+
 	WriteLog(_T("Status:[Load LibWebFXScan Success]"));
 	m_nCount = 0;
 	return TRUE;
@@ -506,44 +561,181 @@ BOOL CLibWFXDemoDlg_NonBlockMode::WriteLog(TCHAR* szMsg)
 	return TRUE;
 }
 
-BOOL CLibWFXDemoDlg_NonBlockMode::ShowImage(TCHAR* szFilePath)
+char* CLibWFXDemoDlg_NonBlockMode::FixUSDLFieldValueToJsonFile(const char* szFilePath, const char* szOCRData)
 {
-	CRect rcImage;
-	static_cast<CStatic *>(GetDlgItem(IDC_STATIC_IMG_1))->GetClientRect(&rcImage);
+	const char* targetKey = "\"SecurityFunction\":";
+	const char* pTarget = strstr(szOCRData, targetKey);
+	const char* pInsertAfter = nullptr;
 
-	CImage Image;
-	HRESULT hRlt = Image.Load(szFilePath);
-
-	//load image fail
-	if (hRlt != S_OK)
-		return FALSE;
-	if ((Image.GetWidth() == 0) || (Image.GetHeight() == 0))
-		return FALSE;
-
-	int nRatioWidth = rcImage.Height() * Image.GetWidth() / Image.GetHeight();
-	int nHRatioHeight = rcImage.Width() * Image.GetHeight() / Image.GetWidth();
-	if (rcImage.Width() > nRatioWidth)
-	{
-		rcImage.left = (rcImage.right - rcImage.left - nRatioWidth) / 2;
-		rcImage.right = rcImage.left + nRatioWidth;
+	if (pTarget != NULL) {
+		const char* pValueStart = strchr(pTarget + strlen(targetKey), '\"');
+		if (pValueStart) {
+			const char* pValueEnd = strchr(pValueStart + 1, '\"');
+			if (pValueEnd) {
+				pInsertAfter = pValueEnd + 1;
+			}
+		}
 	}
 
-	if (rcImage.Height() > nHRatioHeight)
+	if (pInsertAfter == NULL) {
+		const char* fallbackKey = "\"CardExpiryDate\":";
+		const char* pFallback = strstr(szOCRData, fallbackKey);
+		if (pFallback != NULL) {
+			const char* pValueStart = strchr(pFallback + strlen(fallbackKey), '\"');
+			if (pValueStart) {
+				const char* pValueEnd = strchr(pValueStart + 1, '\"');
+				if (pValueEnd) {
+					pInsertAfter = pValueEnd + 1;
+				}
+			}
+		}
+	}
+
+	if (pInsertAfter == NULL) {
+		return _strdup(szOCRData);
+	}
+
+	const char* key = "\"CardExpiryDate\":";
+	const char* pKey = strstr(szOCRData, key);
+	char cardExpiry[32] = { 0 };
+
+	if (pKey != NULL) {
+		const char* pValStart = strchr(pKey + strlen(key), '\"');
+		if (pValStart) {
+			pValStart++;
+			const char* pValEnd = strchr(pValStart, '\"');
+			if (pValEnd) {
+				int valLen = pValEnd - pValStart;
+				if (valLen < sizeof(cardExpiry)) {
+					strncpy_s(cardExpiry, sizeof(cardExpiry), pValStart, valLen);
+				}
+			}
+		}
+	}
+
+	char newField[128] = { 0 };
+	if (pKey != NULL && cardExpiry[0] != '\0') {
+		sprintf_s(newField, sizeof(newField), ",\"ExpiryDateExt\":\"20%s\"", cardExpiry);
+	}
+	else {
+		sprintf_s(newField, sizeof(newField), ",\"ExpiryDateExt\":\"\"");
+	}
+
+	size_t prefixLen = pInsertAfter - szOCRData;
+	size_t suffixLen = strlen(pInsertAfter);
+
+	char* szFinalJson = (char*)malloc(prefixLen + strlen(newField) + suffixLen + 1);
+
+	if (!szFinalJson) {
+		return _strdup(szOCRData);
+	}
+
+	memcpy(szFinalJson, szOCRData, prefixLen);
+	memcpy(szFinalJson + prefixLen, newField, strlen(newField));
+	memcpy(szFinalJson + prefixLen + strlen(newField), pInsertAfter, suffixLen);
+	szFinalJson[prefixLen + strlen(newField) + suffixLen] = '\0';
+
+	char szJsonPath[512];
+	strcpy_s(szJsonPath, sizeof(szJsonPath), szFilePath);
+	char* dot = strrchr(szJsonPath, '.');
+	if (dot) *dot = '\0';
+	strcat_s(szJsonPath, sizeof(szJsonPath), "_OCR.json");
+
+	FILE* fp = NULL;
+	errno_t err = fopen_s(&fp, szJsonPath, "w");
+	if (err == 0 && fp != NULL) {
+		fputs(szFinalJson, fp);
+		fclose(fp);
+		return szFinalJson;
+	}
+
+	return _strdup(szOCRData);
+}
+
+LRESULT CLibWFXDemoDlg_NonBlockMode::OnFixUSDLFieldValueToJsonFile(WPARAM wParam, LPARAM lParam)
+{
+	LPCTSTR pWPath = (LPCTSTR)wParam;
+	LPCTSTR pWData = (LPCTSTR)lParam;
+
+	CStringA szFilePathA(pWPath);
+	CStringA szOcrDataA(pWData);
+	char* szfinalJson = FixUSDLFieldValueToJsonFile(szFilePathA.GetString(), szOcrDataA.GetString());
+	CString szOcrData(szfinalJson);
+	if (szfinalJson != NULL) {
+		CString szOcrData(szfinalJson);
+		vecNotifyMsg.clear();
+		vecNotifyMsg.push_back(pWPath);
+		vecNotifyMsg.push_back(szOcrData.GetString());
+		vecNotifyMsg.push_back(L"Status:[Scan End]\r\n");
+		WriteNotifyLog();
+		free(szfinalJson);
+	}
+	return 0;
+}
+
+LRESULT CLibWFXDemoDlg_NonBlockMode::OnShowImage(WPARAM, LPARAM lParam)
+{
+	std::unique_ptr<CString> path((CString*)lParam);
+	ShowImage((TCHAR*)(LPCTSTR)(*path));
+	return 0;
+}
+
+LRESULT CLibWFXDemoDlg_NonBlockMode::OnSetAutoScanOff(WPARAM wPararm, LPARAM lParam)
+{
+	CString szCommand;
+	GetDlgItem(IDC_COMBO_COMMAND)->GetWindowText(szCommand);
+	//exclude VTM300
+	if ((szCommand.Find(_T("\"device-name\":\"776U\"")) != -1 || szCommand.Find(_T("\"device-name\":\"778U\"")) != -1) && szCommand.Find(_T("\"fastscan\":true")) == -1)
+		return 0;
+	szCommand.Replace(L"\"autoscan\":true", L"\"autoscan\":false");
+	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_SetProperty((wchar_t *)szCommand.GetString(), LibWFXEVENTCB, this);
+	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 	{
-		rcImage.top = (rcImage.bottom - rcImage.top - nHRatioHeight) / 2;
+		CString szErr;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+		return 0;
+	}
+	return 0;
+}
+
+
+
+BOOL CLibWFXDemoDlg_NonBlockMode::ShowImage(TCHAR* szFilePath)
+{
+	CImage image;
+	if (image.Load(szFilePath) != S_OK) return FALSE;
+	if (image.GetWidth() == 0 || image.GetHeight() == 0) return FALSE;
+
+	CWnd* pWnd = GetDlgItem((m_nCount++ % 2) ? IDC_STATIC_IMG_2 : IDC_STATIC_IMG_1);
+	if (!pWnd) return FALSE;
+
+	CRect rcImage;
+	pWnd->GetClientRect(&rcImage);
+
+	int nRatioWidth = rcImage.Height() * image.GetWidth() / image.GetHeight();
+	int nHRatioHeight = rcImage.Width() * image.GetHeight() / image.GetWidth();
+
+	if (rcImage.Width() > nRatioWidth) {
+		rcImage.left = (rcImage.Width() - nRatioWidth) / 2;
+		rcImage.right = rcImage.left + nRatioWidth;
+	}
+	if (rcImage.Height() > nHRatioHeight) {
+		rcImage.top = (rcImage.Height() - nHRatioHeight) / 2;
 		rcImage.bottom = rcImage.top + nHRatioHeight;
 	}
 
-	CDC* pDC = GetDlgItem((m_nCount++ % 2) ? IDC_STATIC_IMG_2 : IDC_STATIC_IMG_1)->GetWindowDC();
+	rcImage.DeflateRect(5, 5);
+	if (rcImage.Width() <= 0 || rcImage.Height() <= 0) return FALSE;
+
+	CDC* pDC = pWnd->GetWindowDC();
+	if (!pDC) return FALSE;
+
 	pDC->SetStretchBltMode(COLORONCOLOR);
-
-	rcImage.left += 5;
-	rcImage.right -= 5;
-	rcImage.top += 5;
-	rcImage.bottom -= 5;
-	Image.Draw(pDC->m_hDC, rcImage);
-	ReleaseDC(pDC);
-
+	image.Draw(pDC->m_hDC, rcImage);
+	pWnd->ReleaseDC(pDC);
 	return TRUE;
 }
 
@@ -642,68 +834,32 @@ BOOL CLibWFXDemoDlg_NonBlockMode::GetJsonString(CString szDevName)
 	{
 		return TRUE;
 	}
-	else if (szDevName == _T("A61") || szDevName == _T("A62") || szDevName == _T("A63") || szDevName == _T("A64") || szDevName == _T("A65") || szDevName == _T("A66") || szDevName == _T("J6102"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}"));
-	}
-	else if (szDevName == _T("7C1U") || szDevName == _T("7C8U") || szDevName == _T("7C9U") || szDevName == _T("7CAU") || szDevName == _T("773U") || szDevName == _T("7CCU"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}"));
-	}
-	else if (szDevName == _T("776U") || szDevName == _T("777U") || szDevName == _T("778U") || szDevName == _T("FE7010_FE7011"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Duplex\"}"));
-	}
-	else if (szDevName == _T("74RU") || szDevName == _T("74BU") || szDevName == _T("7P1U") || szDevName == _T("M11U") || szDevName == _T("7B3U") || szDevName == _T("M12U") || szDevName == _T("FE5020"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Sheetfed-Front\"}"));
-	}
-	else if (szDevName == _T("256U") ||
-		szDevName == _T("258U") ||
-		szDevName == _T("258U_259U") ||
-		szDevName == _T("25AU") ||
-		szDevName == _T("271U") ||
-		szDevName == _T("273U") ||
-		szDevName == _T("273U_274U") ||
-		szDevName == _T("275U") ||
-		szDevName == _T("276U") ||
-		szDevName == _T("261U") ||
-		szDevName == _T("BAG") ||
-		szDevName == _T("7K1U") ||
-		szDevName == _T("6C6U") ||
-		szDevName == _T("BB1U") ||
-		szDevName == _T("BAGU") ||
-		szDevName == _T("2B2U") ||
-		szDevName == _T("2B3U") ||
-		szDevName == _T("7N1U") ||
-		szDevName == _T("2D1U") ||
-		szDevName == _T("2C1U") ||
-		szDevName == _T("797U") ||
-		szDevName == _T("7K7U") ||
-		szDevName == _T("2G1U") ||
-		szDevName == _T("2G2U") ||
-		szDevName == _T("678U") ||
-		szDevName == _T("7K8U") ||
-		szDevName == _T("B85U") ||
-		szDevName == _T("2D3U"))
-	{
-		szDefJson.Append(_T("{\"device-name\":\""));
-		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"Flatbed\"}"));
-	}
 	else
 	{
 		szDefJson.Append(_T("{\"device-name\":\""));
 		szDefJson.Append(szDevName);
-		szDefJson.Append(_T("\",\"source\":\"ADF-Duplex\"}"));
+		ENUM_SOURCETYPE enSource = UNKNOWN;
+		ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetDeviceCapability(T2W(szDevName.GetBuffer()), &enSource, NULL, NULL, NULL, NULL, NULL, NULL);
+
+		if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
+		{
+			CString szErr;
+			wchar_t szErrorMsg[MAX_PATH] = { 0 };
+			m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+			return TRUE;
+		}
+		else if (enSource == SHEETFED)
+			szDefJson.Append(_T("\",\"source\":\"Sheetfed-Front\",\"autoscan\":true}"));
+		else if (enSource == FLATBED)
+			szDefJson.Append(_T("\",\"source\":\"Flatbed\"}"));
+		else if (enSource == CAMERA)
+			szDefJson.Append(_T("\",\"source\":\"Camera\",\"autoscan\":true,\"recognize-type\":\"passport\"}"));
+		else if (enSource == ADF || enSource == ADF_SHEETFED || enSource == ADF_FLATBED)
+			szDefJson.Append(_T("\",\"source\":\"ADF-Duplex\",\"autoscan\":true}"));
+		else
+			return TRUE;
 	}
 	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->AddString(szDefJson);
 	((CComboBox *)GetDlgItem(IDC_COMBO_COMMAND))->SetCurSel(0);
@@ -887,7 +1043,7 @@ BOOL CLibWFXDemoDlg_NonBlockMode::SetCommandString(wchar_t* DevName, CString Com
 	char* pszUTF8IP = new char[nUTF8LenIP + 1];
 	WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)DevName, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
 	CString devname(pszUTF8IP);
-	if (Command.Compare(devname) == -1)
+	if (Command.Find(devname) == -1)
 		return false;
 
 	CString szGetCmd;
@@ -972,9 +1128,9 @@ wchar_t* CLibWFXDemoDlg_NonBlockMode::rtrim(wchar_t *str)
 
 void CLibWFXDemoDlg_NonBlockMode::GetCertificatePermission()
 {
-	const wchar_t* szPermissionTypeList = NULL;
+	wchar_t szPermissionTypeList[MAX_PATH] = { 0 };
 	CString szErr;
-	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetCertificatePermission(&szPermissionTypeList, LIBWFX_DATA_TYPE_REGINFO);
+	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_GetCertificatePermission(szPermissionTypeList, LIBWFX_DATA_TYPE_REGINFO);
 	if (enErrCode == LIBWFX_ERRCODE_SUCCESS)
 	{
 		int nUTF8LenIP = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szPermissionTypeList, -1, NULL, 0, NULL, NULL);
@@ -1014,7 +1170,17 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 								// TODO: Add extra initialization here
 	HICON hicon = AfxGetApp()->LoadIconW(IDI_LICENSE);
 	m_bt_register.SetIcon(hicon);
-
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding stop- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding stop- force"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding stop"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding stop"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject backwarding by steps"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->AddString(_T("eject forwarding by steps"));
+	((CComboBox *)GetDlgItem(IDC_COMBO_EJECT_DIRECTION))->SetCurSel(0);
 #ifdef _DEBUG
 	AllocConsole();
 #endif
@@ -1023,13 +1189,13 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 	{
 		if (m_pfnLibWFX_IsWindowExist(L"") == true)
 		{
+			ShowDlg(false, L"Init");
 			::MessageBoxW(hwnd, L"Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!", L"Warning", MB_OK | MB_ICONEXCLAMATION);
 			CString szErr;
 			szErr.Format(_T("[ Warning ] LIBWFX_ERRCODE_SPECIFIC_AP_OPENING - [%d]"), LIBWFX_ERRCODE_SPECIFIC_AP_OPENING);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 			szErr.Format(_T("[ Warning ] LIBWFX_ERRCODE_NO_INIT - [%d]"), LIBWFX_ERRCODE_NO_INIT);
-			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-			ShowDlg(false, L"Init");
+			WriteLog(const_cast<TCHAR *>(szErr.GetString()));			
 			return FALSE;
 		}
 		//ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_Init();
@@ -1088,6 +1254,14 @@ BOOL CLibWFXDemoDlg_NonBlockMode::OnInitDialog()
 
 LRESULT CLibWFXDemoDlg_NonBlockMode::OnStartScan(WPARAM wPararm, LPARAM lParam)
 {
+	CString szCommand;
+	GetDlgItem(IDC_COMBO_COMMAND)->GetWindowText(szCommand);
+	if (szCommand.Find(_T("\"recognize-type\":\"DocumentExtract\"")) != -1)
+	{
+		::MessageBox(NULL, _T("\"DocumentExtract\" is not supported in Non-Block Mode. Please modify LibWebFxScan.ini to enable Block Mode for this function."), _T("Message"), MB_YESNO);
+		return 0;
+	}
+
 	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_StartScan(LibWFXCB, this);
 
 	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
@@ -1115,6 +1289,12 @@ LRESULT CLibWFXDemoDlg_NonBlockMode::OnWriteLog(WPARAM wPararm, LPARAM lParam)
 
 	WriteLog(szMsg);
 
+	return 0;
+}
+
+LRESULT CLibWFXDemoDlg_NonBlockMode::OnWriteNotifyLog(WPARAM wPararm, LPARAM lParam)
+{
+	WriteNotifyLog();
 	return 0;
 }
 
@@ -1185,23 +1365,7 @@ LRESULT CLibWFXDemoDlg_NonBlockMode::OnEjectPaper(WPARAM wPararm, LPARAM lParam)
 
 		int nUTF8LenIP = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, NULL, 0, NULL, NULL);
 
-		if (nUTF8LenIP > 1) //event happen
-		{
-			char* pszUTF8IP = new char[nUTF8LenIP + 1];
-			WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
-			CString szErr(pszUTF8IP);
-			CString szErr2(pszUTF8IP);
-			szErr.Format(_T("%s"), szErr2);
-			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-			
-			if (pszUTF8IP)
-				delete[] pszUTF8IP;
-		}
-		else if (enErrCode == LIBWFX_ERRCODE_SUCCESS)
-		{
-			WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));
-		}
-		else
+		if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
 		{
 			CString szErr;
 			wchar_t szErrorMsg[MAX_PATH] = { 0 };
@@ -1209,6 +1373,20 @@ LRESULT CLibWFXDemoDlg_NonBlockMode::OnEjectPaper(WPARAM wPararm, LPARAM lParam)
 			szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
 			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
 		}
+		else if (nUTF8LenIP > 1) //event happen
+		{
+			char* pszUTF8IP = new char[nUTF8LenIP + 1];
+			WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
+			CString szErr(pszUTF8IP);
+			CString szErr2(pszUTF8IP);
+			szErr.Format(_T("%s"), szErr2);
+			WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+
+			if (pszUTF8IP)
+				delete[] pszUTF8IP;
+		}
+		else
+			WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));
 	}
 	return 1;
 }
@@ -1270,8 +1448,32 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEditCmd()
 {
 	// TODO: Add your control notification handler code here
 	typedef void(__stdcall* API_EDIT_COMMAND)(wchar_t*, wchar_t**);
+	TCHAR szExeDirPath[AVI_MAXPATH_LEN] = { 0 };
+	DWORD dwLen = GetModuleFileName(NULL, szExeDirPath, AVI_MAXPATH_LEN);
+	while (dwLen-- > 0) {
+		if (szExeDirPath[dwLen] == _T('\\')) {
+			szExeDirPath[dwLen + 1] = 0;
+			break;
+		}
+	}
+	TCHAR szDLLPath[AVI_MAXPATH_LEN + 1];
+	_stprintf_s(szDLLPath, _T("%s%s"), szExeDirPath, _T("CommandEditor.dll"));
+	HMODULE hLib = LoadLibraryEx(szDLLPath, NULL, LOAD_WITH_ALTERED_SEARCH_PATH);
 
-	HMODULE hLib = ::LoadLibrary(_T("CommandEditor.dll"));
+	if (hLib == NULL)
+	{
+		TCHAR szSDKDLLPath[AVI_MAXPATH_LEN] = { 0 };
+		if (GetSDKInstallPath(szSDKDLLPath, false))
+		{
+			if (szDLLPath[_tcslen(szSDKDLLPath) - 1] != _T('\\'))
+			{
+				_tcscat_s(szSDKDLLPath, _T("\\"));
+			}
+			_tcscat_s(szSDKDLLPath, _T("CommandEditor.dll"));
+			hLib = ::LoadLibrary(szSDKDLLPath);
+		}
+	}
+
 	if (hLib == NULL)
 	{
 		WriteLog(_T("Status:[Load CommandEditor Fail]"));
@@ -1290,9 +1492,13 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEditCmd()
 
 	wchar_t* szRtn = NULL;
 	pfn((wchar_t *)szCommand.GetString(), &szRtn);
-
-	GetDlgItem(IDC_COMBO_COMMAND)->SetWindowText(szRtn);
-
+	if (szRtn != nullptr)
+	{
+		if (!wcscmp(L"Invalid JSON format", szRtn))
+			::MessageBox(NULL, _T("Invalid JSON format"), _T("Message"), MB_YESNO);
+		else
+			GetDlgItem(IDC_COMBO_COMMAND)->SetWindowText(szRtn);
+	}
 	::FreeLibrary(hLib);
 
 }
@@ -1324,13 +1530,46 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEco()
 void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEject()
 {
 	const wchar_t* szErrorMsg = NULL;
-	// TODO: Add your control notification handler code here
-	ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect = ((CButton *)GetDlgItem(IDC_CHECK_BACKWARD))->GetCheck() == BST_CHECKED ? LIBWFX_EJECT_BACKWARDING : LIBWFX_EJECT_FORWARDING;
-	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, &szErrorMsg);
+	CString szCommand;
+	GetDlgItem(IDC_COMBO_COMMAND)->GetWindowText(szCommand);
+	ENUM_LIBWFX_ERRCODE enErrCode = m_pfnLibWFX_SetProperty((wchar_t *)szCommand.GetString(), NULL, this);
+	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
+	{
+		CString szErr;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+		return;
+	}
+
+	ENUM_LIBWFX_EJECT_DIRECTION enEjectDirect = LIBWFX_EJECT_BACKWARDING;
+	CString szEjectDirection;
+	GetDlgItem(IDC_COMBO_EJECT_DIRECTION)->GetWindowText(szEjectDirection);
+	if (szEjectDirection == _T("eject backwarding- force")) enEjectDirect = LIBWFX_EJECT_BACKWARDING;
+	else if (szEjectDirection == _T("eject forwarding- force")) enEjectDirect = LIBWFX_EJECT_FORWARDING;
+	else if (szEjectDirection == _T("eject backwarding stop- force")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGS;
+	else if (szEjectDirection == _T("eject forwarding stop- force")) enEjectDirect = LIBWFX_EJECT_FORWARDINGS;
+	else if (szEjectDirection == _T("eject backwarding")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGD;
+	else if (szEjectDirection == _T("eject forwarding")) enEjectDirect = LIBWFX_EJECT_FORWARDINGD;
+	else if (szEjectDirection == _T("eject backwarding stop")) enEjectDirect = LIBWFX_EJECT_BACKWARDINGSD;
+	else if (szEjectDirection == _T("eject forwarding stop")) enEjectDirect = LIBWFX_EJECT_FORWARDINGSD;
+	else if (szEjectDirection == _T("eject backwarding by steps")) enEjectDirect = LIBWFX_EJECT_BACKWARDING_BY_STEPS;
+	else if (szEjectDirection == _T("eject forwarding by steps")) enEjectDirect = LIBWFX_EJECT_FORWARDING_BY_STEPS;
+
+	enErrCode = m_pfnLibWFX_EjectPaperControlWithMsg(enEjectDirect, &szErrorMsg);
 
 	int nUTF8LenIP = WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, NULL, 0, NULL, NULL);
 
-	if (nUTF8LenIP > 1) //event happen
+	if (enErrCode != LIBWFX_ERRCODE_SUCCESS)
+	{
+		CString szErr;
+		wchar_t szErrorMsg[MAX_PATH] = { 0 };
+		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
+		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
+		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
+	}
+	else if (nUTF8LenIP > 1) //event happen
 	{
 		char* pszUTF8IP = new char[nUTF8LenIP + 1];
 		WideCharToMultiByte(CP_UTF8, 0, (wchar_t*)szErrorMsg, -1, pszUTF8IP, nUTF8LenIP, NULL, NULL);
@@ -1342,18 +1581,8 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonEject()
 		if (pszUTF8IP)
 			delete[] pszUTF8IP;
 	}
-	else if (enErrCode == LIBWFX_ERRCODE_SUCCESS)
-	{
-		WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));
-	}
 	else
-	{
-		CString szErr;
-		wchar_t szErrorMsg[MAX_PATH] = { 0 };
-		m_pfnLibWFX_GetLastErrorCode(enErrCode, szErrorMsg);
-		szErr.Format(_T("[ Warning ] %s - [%d]"), szErrorMsg, enErrCode);
-		WriteLog(const_cast<TCHAR *>(szErr.GetString()));
-	}
+		WriteLog(_T("Status:[LibWFX_EjectPaperControl Success]"));
 }
 
 
@@ -1419,7 +1648,7 @@ void CLibWFXDemoDlg_NonBlockMode::OnBnClickedButtonCalibrate()
 	}
 
 	((CComboBox *)GetDlgItem(IDC_COMBO_DEVICE_NAME))->GetLBText(nSelIdx, szGetItemText);
-	if (szGetItemText == _T("A61") || szGetItemText == _T("A62") || szGetItemText == _T("A63") || szGetItemText == _T("A64") || szGetItemText == _T("A65") || szGetItemText == _T("A66") || szGetItemText == _T("J6102"))
+	if (szGetItemText == _T("A61") || szGetItemText == _T("A62") || szGetItemText == _T("A63") || szGetItemText == _T("A64") || szGetItemText == _T("A65") || szGetItemText == _T("A66") || szGetItemText == _T("J6102") || szGetItemText == _T("J1204"))
 		szCommand.Format(_T("{\"device-name\":\"%s\",\"source\":\"Camera\",\"ext-capturetype\":\"g\"}"), szGetItemText);
 	else
 		GetDlgItem(IDC_COMBO_COMMAND)->GetWindowText(szCommand);

@@ -1,33 +1,42 @@
 $(document).ready(function () {
   const isDebug = false;
+  const enableUsdlRecognitionEnrich = false;
   /*** Events ***/
   // send scan command to server
   $("#scan").on("click", async function () {
-    try {
-      view.displayLoadingMask(true);
-      const { result, message, data, error } = await MyScan.scan();
-      if (result) {
-        imageAction.clear();
-        view.displayLoadingMask(false);
-        data.map((file) => {
-          imageAction.addImage(file);
-        });
-        imageAction.updateTotal(data.length);
-        imageAction.to(1);
-      } else {
-        console.log(error);
-      }
-    } catch (e) {
-      console.warn(e);
-      view.displayLoadingMask(false);
-      const { error = "unknown" } = e;
-      alert(`Scan error: ${error}`);
+    // when setScanner params contain `autoscan` (case-insensitive),
+    // treat as auto-scan trigger: no loading mask, no timeout/error handling
+    if (isAutoScanMode(globalParam.scannerConfig)) {
+      await executeAutoScan();
+    } else {
+      await executeNormalScan();
     }
   });
 
   // form component change event
-  $("#device-name").on("change", function (e) {
-    updateServerProperty({ deviceName: this.value });
+  $("#device-name").on("change", async function (e) {
+    const selectedDeviceName = this.value;
+    
+    // Find full info of the selected device
+    const selectedDevice = globalParam.deviceOptions.find(device => device.deviceName === selectedDeviceName);
+    
+    if (selectedDevice) {
+      // Update source options
+      const { source = {} } = selectedDevice;
+      const { value: sourceAry = [] } = source;
+      view.setSourceOpts(sourceAry);
+      
+      // Update other options if available
+      updateFormOptions(selectedDevice);
+      
+      // Set defaults and update server properties
+      const defaultSource = sourceAry.length > 0 ? sourceAry[0] : "";
+      
+      await updateServerProperty({
+        deviceName: selectedDeviceName,
+        source: defaultSource
+      });
+    }
   });
 
   $("#source").on("change", function (e) {
@@ -54,12 +63,21 @@ $(document).ready(function () {
     updateServerProperty({ recognizeType: $(this).val() });
   });
 
-  // show message window
-  $("#message-container").on("click", ".custom-accordion-button", function (e) {
+  // show message window (API tab)
+  $("#api-pane").on("click", ".custom-accordion-button", function (e) {
     const id = $(this).data("id");
     const logDetail = logger.getLog(id);
     const logDetailObj = JSON.parse(logDetail);
     view.displayOcrTextWindow("Message", logDetailObj);
+    e.stopPropagation();
+  });
+
+  // show event window (Event tab)
+  $("#event-pane").on("click", ".custom-accordion-button", function (e) {
+    const id = $(this).data("id");
+    const logDetail = logger.getEventLog(id);
+    const logDetailObj = JSON.parse(logDetail);
+    view.displayOcrTextWindow("Event", logDetailObj);
     e.stopPropagation();
   });
 
@@ -68,7 +86,10 @@ $(document).ready(function () {
     const id = $(this).data("id");
     const imageObj = proxyImageData.imageCache[proxyImageData.index - 1];
     const { ocrText = "" } = imageObj;
-    view.displayOcrTextWindow("Recognize Data", ocrText);
+    const recognizeDisplayData = enableUsdlRecognitionEnrich
+      ? usdlRecognitionPostProcess.enrichForDisplay(ocrText, globalParam)
+      : ocrText;
+    view.displayOcrTextWindow("Recognize Data", recognizeDisplayData);
     e.stopPropagation();
   });
 
@@ -147,11 +168,18 @@ $(document).ready(function () {
   });
 
   // vtm 300 eject paper
-  $("#eject-back").on("click", async function (e) {
-    await MyScan.ejectPaper({ isBackward: true });
-  });
-  $("#eject-front").on("click", async function (e) {
-    await MyScan.ejectPaper({ isBackward: false });
+  $("#eject-paper").on("click", async function (e) {
+    const selectedValue = $("#eject-type").val();
+    // Convert string "true"/"false" to boolean, or keep string value for other options
+    let isBackward;
+    if (selectedValue === "true") {
+      isBackward = true;
+    } else if (selectedValue === "false") {
+      isBackward = false;
+    } else {
+      isBackward = selectedValue; // String values like "EJECT_FORWARDING", etc.
+    }
+    await MyScan.ejectPaper({ isBackward });
   });
 
   /*** Image proxy ***/
@@ -240,6 +268,7 @@ $(document).ready(function () {
       contrast: 0,
       quality: 75,
     },
+    deviceOptions: [], // Option info for all devices
     recognizeTypeOpts: [
       "twid",
       "cnid",
@@ -255,7 +284,6 @@ $(document).ready(function () {
       "barcode",
       "receipt",
       "gridmark",
-      "passport-loose",
       "form",
       "auto",
       "cn-invoice",
@@ -268,10 +296,53 @@ $(document).ready(function () {
     ],
   };
 
+  /*** USDL recognition post-process (BC IIN 636028 → ExpiryDateExt) ***/
+  const usdlRecognitionPostProcess = {
+    IIN_FOR_EXPIRY_EXT: "636028",
+
+    resolveRecognizeType(globalParam) {
+      const recognizeType =
+        globalParam.scannerConfig?.recognizeType ??
+        $("#recognizer-type").val() ??
+        "";
+      return String(recognizeType).toLowerCase();
+    },
+
+    _enrichExpiryDateExt(node) {
+      if (node === null || typeof node !== "object") {
+        return node;
+      }
+      if (Array.isArray(node)) {
+        return node.map((item) => this._enrichExpiryDateExt(item));
+      }
+      const result = {};
+      for (const key of Object.keys(node)) {
+        result[key] = this._enrichExpiryDateExt(node[key]);
+      }
+      if (
+        String(result.IIN) === this.IIN_FOR_EXPIRY_EXT &&
+        typeof result.CardExpiryDate === "string" &&
+        result.CardExpiryDate.length > 0
+      ) {
+        result.ExpiryDateExt = "20" + result.CardExpiryDate;
+      }
+      return result;
+    },
+
+    enrichForDisplay(ocrText, globalParam) {
+      if (this.resolveRecognizeType(globalParam) !== "usdl") {
+        return ocrText;
+      }
+      return this._enrichExpiryDateExt(ocrText);
+    },
+  };
+
   /*** logger ***/
   const logger = {
     counter: 0,
     history: [],
+    eventCounter: 0,
+    eventHistory: [],
     addLog: (log) => {
       logger.history.push(log);
       logger.counter++;
@@ -282,9 +353,21 @@ $(document).ready(function () {
     getCounter: () => {
       return logger.counter;
     },
+    addEventLog: (log) => {
+      logger.eventHistory.push(log);
+      logger.eventCounter++;
+    },
+    getEventLog: (id) => {
+      return logger.eventHistory[id];
+    },
+    getEventCounter: () => {
+      return logger.eventCounter;
+    },
     clear: () => {
       logger.counter = 0;
       logger.history = [];
+      logger.eventCounter = 0;
+      logger.eventHistory = [];
     },
   };
 
@@ -338,14 +421,53 @@ $(document).ready(function () {
       </div>`;
       $("#log-container").append(accordionItem);
 
-      // scroll to bottom
-      $("#message-container").scrollTop(
-        $("#message-container")[0].scrollHeight
-      );
+      // scroll API pane to bottom
+      const apiPane = $("#api-pane")[0];
+      if (apiPane) {
+        $("#api-pane").scrollTop(apiPane.scrollHeight);
+      }
+    },
+    addEventEntry(log) {
+      // cache log
+      const logId = logger.getEventCounter();
+      logger.addEventLog(log);
+
+      // event record template
+      const logTitle = log.substring(0, 100);
+      const accordionItem = `
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="event-heading${logId}">
+          <div
+            class="custom-message-event-bg-color custom-accordion-button p-1 ps-2"
+            type="button"
+            data-id="${logId}"
+          >
+            <div class="custom-arrow-event">
+              ⚡
+            </div>
+            <div class="custom-text-line-2 custom-font-size-mid">
+              ${logTitle}
+            </div>
+          </div>
+        </h2>
+      </div>`;
+      $("#event-log-container").append(accordionItem);
+
+      // scroll Event pane to bottom
+      const eventPane = $("#event-pane")[0];
+      if (eventPane) {
+        $("#event-pane").scrollTop(eventPane.scrollHeight);
+      }
     },
     disableForm(isDisabled) {
+      // disable form controls but keep message-area tools (tabs, clear, test)
+      // always interactive so user can switch tabs / clear logs regardless of
+      // connection state.
       $("#main-form")
         .find("input, select, textarea, button")
+        .not("#message-tabs button")
+        .not("#clear-message")
+        .not("#test")
         .attr("disabled", isDisabled);
     },
     displayOcrTextWindow(title = "", contentObj) {
@@ -379,11 +501,20 @@ $(document).ready(function () {
       // insert [none] opt
       $("#recognizer-type").append(`<option value="">none</option>`);
       // insert avalible opt
-      opts.forEach((recognizeType) => {
-        $("#recognizer-type").append(
-          `<option value="${recognizeType}">${recognizeType}</option>`
-        );
-      });
+      if (Array.isArray(opts)) {
+        opts.forEach((recognizeType) => {
+          $("#recognizer-type").append(
+            `<option value="${recognizeType}">${recognizeType}</option>`
+          );
+        });
+      } else {
+        // Use default options when no device-specific options exist
+        globalParam.recognizeTypeOpts.forEach((recognizeType) => {
+          $("#recognizer-type").append(
+            `<option value="${recognizeType}">${recognizeType}</option>`
+          );
+        });
+      }
     },
     setDeviceOpts(deviceObjs) {
       $("#device-name").empty();
@@ -402,6 +533,7 @@ $(document).ready(function () {
     },
     clearMessage() {
       $("#log-container").empty();
+      $("#event-log-container").empty();
     },
     updateVersion(version) {
       $("#version").text(version);
@@ -415,6 +547,91 @@ $(document).ready(function () {
   };
 
   /*** General function ***/
+  // detect whether setScanner params contain an `autoscan` key (case-insensitive)
+  function isAutoScanMode(config) {
+    if (!config || typeof config !== "object") {
+      return false;
+    }
+    return Object.keys(config).some(
+      (key) => key.toLowerCase() === "autoscan"
+    );
+  }
+
+  // normal scan flow: blocking call, loading mask + error/timeout handling
+  async function executeNormalScan() {
+    try {
+      view.displayLoadingMask(true);
+      const { result, message, data, error } = await MyScan.scan();
+      if (result) {
+        imageAction.clear();
+        view.displayLoadingMask(false);
+        data.map((file) => {
+          imageAction.addImage(file);
+        });
+        imageAction.updateTotal(data.length);
+        imageAction.to(1);
+      } else {
+        console.log(error);
+      }
+    } catch (e) {
+      console.warn(e);
+      view.displayLoadingMask(false);
+      const { error = "unknown" } = e;
+      alert(`Scan error: ${error}`);
+    }
+  }
+
+  // auto-scan flow: no loading mask, no alert on failure; still await scan() so
+  // images from tempScanData are applied when LIBWFX_NOTIFY_END resolves (library
+  // does not invoke autoScanCallback while scan() is active).
+  async function executeAutoScan() {
+    imageAction.clear();
+    const longWaitMs = 60 * 60 * 1000; // 1h — paper may sit idle; avoid default 60s scan timeout
+    try {
+      const { result, message, data, error } = await MyScan.scan({
+        timeout: longWaitMs,
+      });
+      if (result) {
+        const files = Array.isArray(data) ? data : [];
+        imageAction.clear();
+        files.forEach((file) => {
+          imageAction.addImage(file);
+        });
+        imageAction.updateTotal(files.length);
+        if (files.length > 0) {
+          imageAction.to(1);
+        }
+      } else {
+        console.log(error);
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  }
+
+  function updateFormOptions(deviceObj) {
+    // Update other form options such as paperSize, mode, resolution, etc.
+    // Options can be updated here based on device capabilities
+
+    // e.g. update paperSize options
+    if (deviceObj.paperSize && deviceObj.paperSize.value) {
+      // If paperSize options exist, update them here
+      console.log("Available paper sizes:", deviceObj.paperSize.value);
+    }
+
+    // e.g. update mode options
+    if (deviceObj.mode && deviceObj.mode.value) {
+      // If mode options exist, update them here
+      console.log("Available modes:", deviceObj.mode.value);
+    }
+
+    // e.g. update resolution options
+    if (deviceObj.resolution && deviceObj.resolution.value) {
+      // If resolution options exist, update them here
+      console.log("Available resolutions:", deviceObj.resolution.value);
+    }
+  }
+
   async function init() {
     try {
       view.debugMode(isDebug);
@@ -425,11 +642,46 @@ $(document).ready(function () {
       const version = await MyScan.getVersion();
       view.updateVersion(version);
 
+      const eventCallback = (code, data) => {
+        console.log(code, data);
+        try {
+          const eventLog = {
+            code,
+            data: serialize(data),
+          };
+          view.addEventEntry(JSON.stringify(eventLog));
+        } catch (e) {
+          console.warn("addEventEntry error:", e);
+        }
+      };
+
+      const ipExceptionCallback = (dataObj = {}) => {
+        const { func = "", type = "", data = {} } = dataObj;
+        const { message = "", notify_code } = data;
+        alert(message);
+      };
+
+      const closeCallback = (event = {}) => {
+        console.log("[Demo] connection closed:", event);
+        const { code = "", reason = "", wasClean = false } = event;
+        const reasonText = reason || "(no reason)";
+        alert(
+          `Connection closed.\ncode: ${code}\nreason: ${reasonText}\nwasClean: ${wasClean}`
+        );
+      };
+
       // connect server
-      await MyScan.connect({ ip: "127.0.0.1", port: "17778" });
+      await MyScan.connect({
+        ip: "127.0.0.1",
+        port: "17778",
+        eventCallback,
+        ipExceptionCallback,
+        closeCallback,
+      });
       await MyScan.setAutoScanCallback({
         callback: (file, errCode) => {
-          if(errCode === 0) {
+          console.log("Autoscan callback", file, errCode);
+          if (errCode === 0) {
             imageAction.addImage(file);
           }
           view.displayLoadingMask(false);
@@ -451,6 +703,10 @@ $(document).ready(function () {
       if (options.length < 1) {
         throw new Error("Scanner not detected.");
       }
+      
+      // Save device options to globalParam
+      globalParam.deviceOptions = options;
+      
       // select first device as default.
       const { deviceName = "", source = {} } = options[0];
       const { value: sourceAry = [] } = source;
@@ -551,7 +807,7 @@ $(document).ready(function () {
   }
 
   /*** Main ***/
-  const MyScan = new WebFxScan();
+  const MyScan = new WebFxScan({mode:"dev"});
   wrapLib(MyScan);
   init();
 });

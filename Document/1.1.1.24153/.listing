@@ -1,0 +1,11 @@
+drwxrwxr-x   3 1148     1010         4096 May 22 06:13 .
+drwxrwxr-x  12 1154     1010         4096 May 22 06:13 ..
+-rw-r--r--   1 1148     1010          517 May 22 06:13 asset-manifest.json
+-rw-r--r--   1 1148     1010          130 May 22 06:13 conf.js
+-rw-r--r--   1 1148     1010         3870 May 22 06:13 favicon.ico
+-rw-r--r--   1 1148     1010          645 May 22 06:13 index.html
+-rw-r--r--   1 1148     1010         5347 May 22 06:13 logo192.png
+-rw-r--r--   1 1148     1010         9664 May 22 06:13 logo512.png
+-rw-r--r--   1 1148     1010          517 May 22 06:13 manifest.json
+-rw-r--r--   1 1148     1010           67 May 22 06:13 robots.txt
+drwxrwxr-x   4 1148     1010         4096 May 22 06:13 static

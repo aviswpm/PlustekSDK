@@ -55,6 +55,10 @@ public enum ENUM_LIBWFX_ERRCODE
     LIBWFX_ERRCODE_SPECIFIC_AP_OPENING,         /**< The unauthorized program is running */
     LIBWFX_ERRCODE_PARM_VALUE_MISMATCH,         /**< Undefined parameter value appears in command */
     LIBWFX_ERRCODE_INVALID_FILE_FORMAT,         /**< Only image files(JPG, BMP, PNG) are allowed When Using "MergePdf" */
+    LIBWFX_ERRCODE_INIT_DLL_NOT_FOUND,          /**< Failed to load DLL because the file was not found. */
+    LIBWFX_ERRCODE_INIT_DLL_LOAD_FAILED,        /**< DLL file exists but failed to load (may be corrupted or incompatible). */
+    LIBWFX_ERRCODE_API_BUSY,                    /**< API is busy processing the previous request */
+    LIBWFX_ERRCODE_ONLY_SUPPORT_X64             /**< Only support X64 */
 }
 
 public enum ENUM_LIBWFX_EVENT_CODE
@@ -95,12 +99,21 @@ public enum ENUM_LIBWFX_NOTIFY_CODE
     LIBWFX_NOTIFY_END,
     LIBWFX_NOTIFY_EXCEPTION,
     LIBWFX_NOTIFY_SHOWPATHONLY,
+    LIBWFX_NOTIFY_STREAM_MODE,
 }
 
 public enum ENUM_LIBWFX_EJECT_DIRECTION
 {
     LIBWFX_EJECT_FORWARDING = 1,
+    LIBWFX_EJECT_BACKWARDINGS,
     LIBWFX_EJECT_BACKWARDING,
+    LIBWFX_EJECT_FORWARDINGS,
+    LIBWFX_EJECT_FORWARDINGD,
+    LIBWFX_EJECT_BACKWARDINGD,
+    LIBWFX_EJECT_BACKWARDINGSD,
+    LIBWFX_EJECT_FORWARDINGSD,
+    LIBWFX_EJECT_FORWARDING_BY_STEPS = 10,
+    LIBWFX_EJECT_BACKWARDING_BY_STEPS,
 }
 
 public enum ENUM_LIBWFX_COLOR_MODE
@@ -130,6 +143,24 @@ public enum ENUM_PERMISSION_DATA_TYPE
 {
     LIBWFX_DATA_TYPE_PERMISSION,
     LIBWFX_DATA_TYPE_REGINFO,
+}
+
+public enum ENUM_SOURCETYPE
+{
+    UNKNOWN = 0,
+    ADF,
+    SHEETFED,
+    ADF_SHEETFED,
+    FLATBED,
+    ADF_FLATBED,
+    CAMERA,
+}
+
+public enum ENUM_SHOW_PICTURE_MODE
+{
+    SHOW_PICTURE_FRONT = 0,
+    SHOW_PICTURE_BACK = 1,
+    SHOW_PICTURE_STREAM = 2,
 }
 
 [StructLayout(LayoutKind.Sequential)]
@@ -213,13 +244,16 @@ class DeviceWrapper
     public delegate void EditCommand(String szCommand, out IntPtr szCommandOut);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
-    public delegate ENUM_LIBWFX_ERRCODE LibWFX_GetCertificatePermission(out IntPtr szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE enDataType);
+    public delegate ENUM_LIBWFX_ERRCODE LibWFX_GetCertificatePermission(IntPtr szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE enDataType);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     public delegate ENUM_LIBWFX_ERRCODE LibWFX_RecycleSaveFolder();
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
     public delegate ENUM_LIBWFX_ERRCODE LibWFX_WriteAPLog(String szMsg);
+
+    [UnmanagedFunctionPointer(CallingConvention.StdCall, CharSet = CharSet.Unicode)]
+    public delegate ENUM_LIBWFX_ERRCODE LibWFX_GetDeviceCapability(String szDeviceName, out ENUM_SOURCETYPE enSource, out bool bDuplex, out bool bJpegTransfer, out int nDPI, out int nMaxPaperSizeX, out int nMaxPaperSizeY, out bool bLongPaper);
 
     public LibWFX_Init m_pfnLibWFX_Init;
     public LibWFX_InitEx m_pfnLibWFX_InitEx;
@@ -243,6 +277,7 @@ class DeviceWrapper
     public LibWFX_GetCertificatePermission m_pfnLibWFX_GetCertificatePermission;
     public LibWFX_RecycleSaveFolder m_pfnLibWFX_RecycleSaveFolder;
     public LibWFX_WriteAPLog m_pfnLibWFX_WriteAPLog;
+    public LibWFX_GetDeviceCapability m_pfnLibWFX_GetDeviceCapability;
 
     public DeviceWrapper()
     {
@@ -354,10 +389,13 @@ class DeviceWrapper
 
             pFun = GetProcAddress(hLibModule, "LibWFX_WriteAPLog");
             m_pfnLibWFX_WriteAPLog = (LibWFX_WriteAPLog)Marshal.GetDelegateForFunctionPointer(pFun, typeof(LibWFX_WriteAPLog));
+
+            pFun = GetProcAddress(hLibModule, "LibWFX_GetDeviceCapability");
+            m_pfnLibWFX_GetDeviceCapability = (LibWFX_GetDeviceCapability)Marshal.GetDelegateForFunctionPointer(pFun, typeof(LibWFX_GetDeviceCapability));
+
         }
         else
             MessageBox.Show("Library loading failed. Please ensure that the SDK installation package is correctly installed!", "Warning");
-
     }
 }
 

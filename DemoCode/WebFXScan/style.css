@@ -112,6 +112,7 @@ body {
 }
 .custom-bg-sider {
   background-color: rgb(236 242 249);
+  min-height: 0;
 }
 .custom-bg-content {
   background-color: rgb(211 211 211);
@@ -124,6 +125,22 @@ body {
   min-width: 780px;
 }
 
+/* Allow flex descendants to shrink so overflow-y scroll works (default min-height: auto prevents shrink) */
+.min-h-0 {
+  min-height: 0;
+}
+
+.custom-body-row {
+  min-height: 0;
+}
+
+/* Message log panel: fills remaining sidebar height, inner panes scroll */
+.custom-message-panel {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
 /* custom message */
 #logContainer {
   flex-grow: 1;
@@ -131,11 +148,15 @@ body {
   max-height: 100%;
 }
 .custom-card {
-  height: 1px;
+  min-height: 0;
+  flex: 1 1 0;
   scrollbar-gutter: stable;
+  overflow: hidden;
 }
 .custom-card-body {
-
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
 }
 .custom-arrow-up {
   color: #2cb10d;
@@ -174,6 +195,62 @@ body {
 }
 .custom-message-down-bg-color:not(.collapsed) {
   background-color: #d3ebfb;
+}
+.custom-message-event-bg-color {
+  background-color: #fff5d6;
+}
+.custom-message-event-bg-color:focus {
+  background-color: #fff5d6;
+}
+.custom-message-event-bg-color:not(.collapsed) {
+  background-color: #fff5d6;
+}
+.custom-arrow-event {
+  color: #e6a700;
+  font-size: x-large;
+  font-weight: bold;
+  margin-left: -10px;
+}
+
+/* Message tabs */
+.custom-message-tabs {
+  border-bottom: 1px solid #c9c4c4;
+  flex-wrap: nowrap;
+}
+.custom-message-tabs .nav-item {
+  margin-bottom: -1px;
+}
+.custom-message-tabs .nav-link {
+  color: #6c6e73;
+  padding: 0.25rem 0.75rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background-color: transparent;
+  font-size: 0.875rem;
+}
+.custom-message-tabs .nav-link:hover {
+  color: #ff8200;
+  border-color: transparent;
+}
+.custom-message-tabs .nav-link.active {
+  color: #ff8200;
+  background-color: #fff;
+  border-color: #c9c4c4 #c9c4c4 #fff;
+}
+#message-container {
+  border-top-left-radius: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+#main-form .tab-content {
+  min-height: 0;
+  flex: 1 1 auto;
+}
+
+#main-form .tab-pane.active {
+  min-height: 0;
 }
 .custom-accordion-button {
   position: relative;

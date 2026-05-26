@@ -6,16 +6,12 @@ public class DemoFrame {
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
-
 		EventQueue.invokeLater(new Runnable() {
-			public void run() {						
-				String	directoryName = System.getProperty("user.dir");				
+			public void run() {
+				String	directoryName = System.getProperty("user.dir");
 				LoadINIData rc = new LoadINIData(directoryName + "\\LibWebFxScan.ini");
 			    String UseModeBlock = rc.getValue("UseModeBlock");
-		        
-			   
-		    	
-	    		
+
 			    if(UseModeBlock.equals("0"))
 			    {
 			    	try {
@@ -36,7 +32,7 @@ public class DemoFrame {
 						e.printStackTrace();
 						System.exit(1);
 					}
-			    }			
+			    }
 			}
 		});
 	}
@@ -52,7 +48,7 @@ public class DemoFrame {
 	 * Initialize the contents of the frame.
 	 */
 	private void initialize() {
-	}	
+	}
 }
 
 

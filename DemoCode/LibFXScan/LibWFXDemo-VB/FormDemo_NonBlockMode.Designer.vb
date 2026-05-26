@@ -39,13 +39,13 @@ Partial Class FormDemo_NonBlockMode
         Me.PROGRESS_BAR = New System.Windows.Forms.ProgressBar()
         Me.LABEL_PROGRESS = New System.Windows.Forms.Label()
         Me.BTN_EJECT_PAPER = New System.Windows.Forms.Button()
-        Me.CHK_EJECT_DIRECT = New System.Windows.Forms.CheckBox()
         Me.BTN_PAPERSTATUS = New System.Windows.Forms.Button()
         Me.BTN_EDIT = New System.Windows.Forms.Button()
         Me.COMBO_COMMAND = New System.Windows.Forms.ComboBox()
         Me.GroupBox1 = New System.Windows.Forms.GroupBox()
         Me.BTN_SCAN = New System.Windows.Forms.Button()
         Me.GroupBox2 = New System.Windows.Forms.GroupBox()
+        Me.COMBO_EJECT_DIRECTION = New System.Windows.Forms.ComboBox()
         Me.BTN_REGISTER = New System.Windows.Forms.Button()
         CType(Me.PIC_IMAGE1, System.ComponentModel.ISupportInitialize).BeginInit()
         CType(Me.PIC_IMAGE2, System.ComponentModel.ISupportInitialize).BeginInit()
@@ -144,9 +144,9 @@ Partial Class FormDemo_NonBlockMode
         '
         'BTN_RECYCLESAVEFOLDER
         '
-        Me.BTN_RECYCLESAVEFOLDER.Location = New System.Drawing.Point(101, 89)
+        Me.BTN_RECYCLESAVEFOLDER.Location = New System.Drawing.Point(92, 89)
         Me.BTN_RECYCLESAVEFOLDER.Name = "BTN_RECYCLESAVEFOLDER"
-        Me.BTN_RECYCLESAVEFOLDER.Size = New System.Drawing.Size(164, 23)
+        Me.BTN_RECYCLESAVEFOLDER.Size = New System.Drawing.Size(99, 23)
         Me.BTN_RECYCLESAVEFOLDER.TabIndex = 11
         Me.BTN_RECYCLESAVEFOLDER.Text = "RecycleSaveFolder"
         Me.BTN_RECYCLESAVEFOLDER.UseVisualStyleBackColor = True
@@ -196,22 +196,12 @@ Partial Class FormDemo_NonBlockMode
         '
         'BTN_EJECT_PAPER
         '
-        Me.BTN_EJECT_PAPER.Location = New System.Drawing.Point(16, 17)
+        Me.BTN_EJECT_PAPER.Location = New System.Drawing.Point(49, 35)
         Me.BTN_EJECT_PAPER.Name = "BTN_EJECT_PAPER"
-        Me.BTN_EJECT_PAPER.Size = New System.Drawing.Size(75, 23)
+        Me.BTN_EJECT_PAPER.Size = New System.Drawing.Size(75, 19)
         Me.BTN_EJECT_PAPER.TabIndex = 18
         Me.BTN_EJECT_PAPER.Text = "EjectPaper"
         Me.BTN_EJECT_PAPER.UseVisualStyleBackColor = True
-        '
-        'CHK_EJECT_DIRECT
-        '
-        Me.CHK_EJECT_DIRECT.AutoSize = True
-        Me.CHK_EJECT_DIRECT.Location = New System.Drawing.Point(110, 21)
-        Me.CHK_EJECT_DIRECT.Name = "CHK_EJECT_DIRECT"
-        Me.CHK_EJECT_DIRECT.Size = New System.Drawing.Size(48, 16)
-        Me.CHK_EJECT_DIRECT.TabIndex = 19
-        Me.CHK_EJECT_DIRECT.Text = "Back"
-        Me.CHK_EJECT_DIRECT.UseVisualStyleBackColor = True
         '
         'BTN_PAPERSTATUS
         '
@@ -269,14 +259,22 @@ Partial Class FormDemo_NonBlockMode
         '
         'GroupBox2
         '
+        Me.GroupBox2.Controls.Add(Me.COMBO_EJECT_DIRECTION)
         Me.GroupBox2.Controls.Add(Me.BTN_EJECT_PAPER)
-        Me.GroupBox2.Controls.Add(Me.CHK_EJECT_DIRECT)
-        Me.GroupBox2.Location = New System.Drawing.Point(387, 310)
+        Me.GroupBox2.Location = New System.Drawing.Point(387, 300)
         Me.GroupBox2.Name = "GroupBox2"
-        Me.GroupBox2.Size = New System.Drawing.Size(165, 59)
+        Me.GroupBox2.Size = New System.Drawing.Size(178, 59)
         Me.GroupBox2.TabIndex = 23
         Me.GroupBox2.TabStop = False
-        Me.GroupBox2.Text = "VTM300"
+        Me.GroupBox2.Text = "VTM"
+        '
+        'COMBO_EJECT_DIRECTION
+        '
+        Me.COMBO_EJECT_DIRECTION.FormattingEnabled = True
+        Me.COMBO_EJECT_DIRECTION.Location = New System.Drawing.Point(10, 13)
+        Me.COMBO_EJECT_DIRECTION.Name = "COMBO_EJECT_DIRECTION"
+        Me.COMBO_EJECT_DIRECTION.Size = New System.Drawing.Size(159, 20)
+        Me.COMBO_EJECT_DIRECTION.TabIndex = 19
         '
         'BTN_REGISTER
         '
@@ -318,7 +316,6 @@ Partial Class FormDemo_NonBlockMode
         CType(Me.PIC_IMAGE2, System.ComponentModel.ISupportInitialize).EndInit()
         Me.GroupBox1.ResumeLayout(False)
         Me.GroupBox2.ResumeLayout(False)
-        Me.GroupBox2.PerformLayout()
         Me.ResumeLayout(False)
         Me.PerformLayout()
 
@@ -339,7 +336,6 @@ Partial Class FormDemo_NonBlockMode
     Friend WithEvents PROGRESS_BAR As System.Windows.Forms.ProgressBar
     Friend WithEvents LABEL_PROGRESS As System.Windows.Forms.Label
     Friend WithEvents BTN_EJECT_PAPER As System.Windows.Forms.Button
-    Friend WithEvents CHK_EJECT_DIRECT As System.Windows.Forms.CheckBox
     Friend WithEvents BTN_PAPERSTATUS As System.Windows.Forms.Button
     Friend WithEvents BTN_EDIT As Button
     Friend WithEvents COMBO_COMMAND As ComboBox
@@ -347,4 +343,5 @@ Partial Class FormDemo_NonBlockMode
     Friend WithEvents GroupBox2 As GroupBox
     Friend WithEvents BTN_SCAN As Button
     Friend WithEvents BTN_REGISTER As Button
+    Friend WithEvents COMBO_EJECT_DIRECTION As ComboBox
 End Class

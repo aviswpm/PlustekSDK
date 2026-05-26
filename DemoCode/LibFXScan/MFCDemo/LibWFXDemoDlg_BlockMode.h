@@ -51,6 +51,7 @@ private:
 	LIBWFX_RECYCLESAVEFOLDER    m_pfnLibWFX_RecycleSaveFolder;
 	LIBWFX_MERGETOPDF		  m_pfnLibWFX_MergeToPdf;
 	LIBWFX_WRITEAPLOG         m_pfnLibWFX_WriteAPLog;
+	LIBWFX_GETDEVICECAPABILITY m_pfnLibWFX_GetDeviceCapability;
 
 	int                       m_nCount;
 	int                       m_nWarmupTotalTime;
@@ -74,6 +75,7 @@ private:
 	void ShowDlg(bool enableDlg, wchar_t* szAction);
 	BOOL GetSDKInstallPath(TCHAR* szInstallPath, bool bIsSDKInstallPath);
 	BOOL IsWow64Process();
+	char* FixUSDLFieldValueToJsonFile(const char* szFilePath, const char* szOCRData);
 protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	HICON m_hIcon;

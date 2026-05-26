@@ -1,4 +1,5 @@
 package adview.webfxscan;
+import java.io.File;
 
 public class WebFXScan {
 	
@@ -52,6 +53,10 @@ public class WebFXScan {
 	    public final static int LIBWFX_ERRCODE_SPECIFIC_AP_OPENING = 1015;       /**< The unauthorized program is running */
 	    public final static int LIBWFX_ERRCODE_PARM_VALUE_MISMATCH = 1016;       /**< Undefined parameter value appears in command */
 	    public final static int LIBWFX_ERRCODE_INVALID_FILE_FORMAT = 1017;       /**< Only image files(JPG, BMP, PNG) are allowed when using "MergePdf */
+	    public final static int LIBWFX_ERRCODE_INIT_DLL_NOT_FOUND = 1018;        /**< Failed to load DLL because the file was not found */
+	    public final static int LIBWFX_ERRCODE_INIT_DLL_LOAD_FAILED = 1019;      /**< DLL file exists but failed to load (may be corrupted or incompatible) */
+	    public final static int LIBWFX_ERRCODE_API_BUSY = 1020;					 /**< API is busy processing the previous request */
+	    public final static int LIBWFX_ERRCODE_ONLY_SUPPORT_X64 = 1021;			 /**< Only support X64 */
 	}
 
 	public class ENUM_LIBWFX_EVENT_CODE
@@ -75,7 +80,7 @@ public class WebFXScan {
 		public final static int LIBWFX_EVENT_OVER_TIME_SCAN = 16;
 		public final static int LIBWFX_EVENT_CANCEL_SCAN = 17;
 		public final static int LIBWFX_EVENT_CAMERA_RGB_DISLOCATION = 18;
-		public final static int LIBWFX_EVENT_CAMERA_TIMEOUT = 19;		
+		public final static int LIBWFX_EVENT_CAMERA_TIMEOUT = 19;
 	}
 	
 	public class ENUM_LIBWFX_EXCEPTION_CODE
@@ -93,13 +98,21 @@ public class WebFXScan {
 		public final static int LIBWFX_NOTIFY_EXCEPTION = 2;
 		public final static int LIBWFX_NOTIFY_SHOWPATHONLY = 3;
 	};
-	
+
 	public class ENUM_LIBWFX_EJECT_DIRECTION
 	{
 	    public final static int LIBWFX_EJECT_FORWARDING = 1;
-	    public final static int LIBWFX_EJECT_BACKWARDING = 2;
+	    public final static int LIBWFX_EJECT_BACKWARDINGS = 2;
+	    public final static int LIBWFX_EJECT_BACKWARDING = 3;
+	    public final static int LIBWFX_EJECT_FORWARDINGS = 4;
+	    public final static int LIBWFX_EJECT_FORWARDINGD = 5;
+	    public final static int LIBWFX_EJECT_BACKWARDINGD = 6;
+	    public final static int LIBWFX_EJECT_BACKWARDINGSD = 7;
+	    public final static int LIBWFX_EJECT_FORWARDINGSD = 8;	    
+	    public final static int LIBWFX_EJECT_FORWARDING_BY_STEPS = 10;
+	    public final static int LIBWFX_EJECT_BACKWARDING_BY_STEPS = 11;
 	};
-	
+
 	public class ENUM_LIBWFX_INIT_MODE
 	{
 		public final static int LIBWFX_INIT_MODE_NORMAL = 0;
@@ -110,14 +123,25 @@ public class WebFXScan {
 	{
 		public final static int LIBWFX_DATA_TYPE_PERMISSION = 0;
 	    public final static int LIBWFX_DATA_TYPE_REGINFO = 1;
-	}
+	};
 	
 	public class ENUM_LIBWFX_INTERFACE
 	{
 		public final static int LIBWFX_INTERFACE_SDK = 0;
 	    public final static int LIBWFX_INTERFACE_WEBSCAN = 1;
-	}
+	};
 	
+	public class ENUM_SOURCETYPE
+	{
+		public final static int UNKNOWN = 0;
+	    public final static int ADF = 1;
+	    public final static int SHEETFED = 2;
+	    public final static int ADF_SHEETFED = 3;
+	    public final static int FLATBED = 4;
+	    public final static int ADF_FLATBED = 5;
+	    public final static int CAMERA = 6;
+	};
+
 	public class CImageInfo {
 	    public int nColorMode; // 0:BW,1:GRAY,2:COLOR
 	    public long ulPixel;
@@ -148,10 +172,16 @@ public class WebFXScan {
 		public abstract void DoCallBack(int enNotifyCode, int enExcCode, Object object, String szRecognizeTxt);
 	}
 	
-	static {	
-		System.loadLibrary("JavaWFXScan");
-		//System.loadLibrary("C:\\Program Files\\Plustek\\WebFXScan2\\JavaWFXScan.dll");
-		
+	static {
+		String szDllPath = System.getProperty("user.dir") + "\\JavaWFXScan.dll";
+		 File file = new File(szDllPath);
+	        if (file.exists()) {
+	        	System.load(szDllPath);	    		
+	        }
+	        else {
+	        	//debug mode
+	        	System.loadLibrary("JavaWFXScan");
+	        }
 	}
 	
 	public native int WFXScan_Init();
@@ -180,4 +210,5 @@ public class WebFXScan {
 	public native int WFXScan_MergeToPdf(String szFileNameIn);
 	public native int WFXScan_WriteAPLog(String szMsg);
 	public native void WFXScan_CallRegisterAP();
+	public native int WFXScan_GetDeviceCapability(String szDeviceName, int[] outCaps); // [0]=enSource, [1]=bDuplex, [2]=bJpegTransfer, [3]=nDPI, [4]=nMaxX, [5]=nMaxY, [6]=bLongPaper
 }

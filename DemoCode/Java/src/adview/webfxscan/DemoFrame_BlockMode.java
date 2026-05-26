@@ -73,13 +73,14 @@ public class DemoFrame_BlockMode  {
 	private JLabel label_1;
 	private JButton button;
 	private JButton btnEjectPaper;
-	private JCheckBox chkEjectDirect;
 	private JButton btnPaperStatus;
 	private JTextField editor;
 	private int m_nMaxCMDItems;
 	private JButton btnScan;
 	private JButton btnPaperready;
 	private JButton btnRegister;
+	private JComboBox comboEjectDirection;
+
 
 	/**
 	 * Launch the application.
@@ -127,7 +128,7 @@ public class DemoFrame_BlockMode  {
     	window.setVisible(true);		    	
     	frmWfxdemo.setVisible(false);
 
-		int ret = m_WFXScan.WFXScan_InitEx(WebFXScan.ENUM_LIBWFX_INIT_MODE.LIBWFX_INIT_MODE_NORMAL);		
+		int ret = m_WFXScan.WFXScan_InitEx(WebFXScan.ENUM_LIBWFX_INIT_MODE.LIBWFX_INIT_MODE_NORMAL);
 
 		if(m_WFXScan.WFXScan_IsWindowExist("") == true) {		
 			javax.swing.JOptionPane.showMessageDialog(null, "Please confirm whether the \"CheckWindowTitle\" parameter content in LibWebFxScan.ini are all closed!!");
@@ -169,7 +170,7 @@ public class DemoFrame_BlockMode  {
 		}
 		window.setVisible(false);
 		window.dispose();
-    	frmWfxdemo.setVisible(true);
+		frmWfxdemo.setVisible(true);
 	}
 
 	/**
@@ -212,7 +213,32 @@ public class DemoFrame_BlockMode  {
 				{
 					return;
 				}
-				else if (m_szDevice.equals("7C1U") || m_szDevice.equals("7C8U") || m_szDevice.equals("7C9U") || m_szDevice.equals("7CAU") || m_szDevice.equals("773U") || m_szDevice.equals("7CCU")) 
+				else
+				{		
+					int[] caps = new int[7];
+					int ret = m_WFXScan.WFXScan_GetDeviceCapability(m_szDevice, caps);
+					if(ret == WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS)
+					{
+						if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.CAMERA)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.SHEETFED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Front\"}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.FLATBED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Flatbed\"}";
+						else if(caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF || caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF_FLATBED || caps[0] == (int)WebFXScan.ENUM_SOURCETYPE.ADF_SHEETFED)
+							szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"ADF-Duplex\"}";
+						else
+							return;
+					}
+					else
+					{
+						m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
+						WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
+						return;
+					}
+						
+				}
+			/*	else if (m_szDevice.equals("7C1U") || m_szDevice.equals("7C8U") || m_szDevice.equals("7C9U") || m_szDevice.equals("7CAU") || m_szDevice.equals("773U") || m_szDevice.equals("7CCU")) 
 				{
 					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Duplex\",\"recognize-type\":\"passport\"}";
 				} 
@@ -224,7 +250,7 @@ public class DemoFrame_BlockMode  {
 				{
 					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Camera\",\"recognize-type\":\"passport\"}";
 				} 
-				else if (m_szDevice.equals("74RU") || m_szDevice.equals("74BU")  || m_szDevice.equals("7P1U")  || m_szDevice.equals("M11U") || m_szDevice.equals("7B3U") || m_szDevice.equals("M12U") || m_szDevice.equals("FE5020")) 
+				else if (m_szDevice.equals("74RU") || m_szDevice.equals("74BU")  || m_szDevice.equals("7P1U")  || m_szDevice.equals("M11U") || m_szDevice.equals("7B3U") || m_szDevice.equals("M12U") || m_szDevice.equals("FE5020") || m_szDevice.equals("7B7U") || m_szDevice.equals("FE5030")) 
 				{
 					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"Sheetfed-Front\"}";
 				}
@@ -262,7 +288,7 @@ public class DemoFrame_BlockMode  {
 				else
 				{
 					szCommandtmp = "{\"device-name\":\"" + m_szDevice + "\",\"source\":\"ADF-Front\"}";
-				}
+				}*/
 				comboScanCmd.removeAllItems();
 				comboScanCmd.addItem(szCommandtmp);
 				comboScanCmd.setSelectedIndex(0);
@@ -292,8 +318,13 @@ public class DemoFrame_BlockMode  {
 						comboDeviceList.removeAllItems();
 						for (int i = 0; i < jsonDeviceList.length(); i++) {
 							comboDeviceList.addItem(jsonDeviceList.get(i).toString());
-							WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: " + jsonSerialNumberList.get(i).toString() + "\n");
-						}
+							String sn = (jsonSerialNumberList != null) ? jsonSerialNumberList.optString(i, "") : "";
+							    if (!sn.isEmpty()) {
+							        WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: " + jsonSerialNumberList.get(i).toString() + "\n");
+								} else {
+							        WriteLog("Device: " + jsonDeviceList.get(i).toString() + "   " + "Serial Number: \n");
+							    }
+							}
 					}
 				}
 				else {
@@ -448,7 +479,12 @@ public class DemoFrame_BlockMode  {
 		            m_WFXScan.WFXScan_EditCommand(szCommand, szRtn);
 
 		            if ((szRtn != null) && (szRtn.szValue.length() > 0))
-		            {		               
+		            {
+		            	if(szRtn.szValue.contains("Invalid JSON format") == true)
+		            	{
+		            		javax.swing.JOptionPane.showMessageDialog(null, "Invalid JSON format");
+		        			return;
+		            	}
 		                commandLists.add(szRtn.szValue);
 		                for (int idx = 0; idx < comboScanCmd.getItemCount(); idx++)
 		                {
@@ -541,37 +577,44 @@ public class DemoFrame_BlockMode  {
 						String ScanImageList[] = szScanImageList.split("\\|&\\|");
 						String OCRResultLis[] = szOCRResultList.split("\\|&\\|");
 												
-						for(int i=0; i< ScanImageList.length; i++) {
-							WriteLog(ScanImageList[i] + "\n");   //get each image path
-							WriteLog(OCRResultLis[i] + "\n");    //get each ocr result
-							
-							if (ScanImageList[i].contains(".pdf") == false && ScanImageList[i].contains(".tif") == false && ScanImageList[i].toUpperCase().contains("_PHOTO") == false && ScanImageList[i].equals("") == false) {
-	        					BufferedImage img = null;
-	        					try {
-	        						img = ImageIO.read(new File(ScanImageList[i]));
-	        					} catch (IOException e) {
-	        						e.printStackTrace();
-	        					}
-	        					float ratioW = 0;
-	        					float ratioH = 0;  
-	        					try {
-	        					  ratioW = (float) DemoFrame_BlockMode.labelPreview1.getWidth() / img.getWidth();
-	        					  ratioH = (float) DemoFrame_BlockMode.labelPreview1.getHeight() / img.getHeight();
-	        					} catch (final ArithmeticException e) {
-	        						e.printStackTrace();
-	        					}
-	        					float ratio = (ratioW < ratioH) ? ratioW : ratioH;
-	        					BufferedImage fitImg = convertToBufferedImage(img.getScaledInstance((int) (img.getWidth() * ratio),
-	        							(int) (img.getHeight() * ratio), Image.SCALE_SMOOTH));
-	        					DemoFrame_BlockMode.m_nCount++;
-	        					if (DemoFrame_BlockMode.m_nCount % 2 == 1) {
-	        						DemoFrame_BlockMode.labelPreview1.setIcon(new ImageIcon(fitImg));
-	        						DemoFrame_BlockMode.labelPreview1.setHorizontalAlignment(JLabel.CENTER);
-	        					} else {
-	        						DemoFrame_BlockMode.labelPreview2.setIcon(new ImageIcon(fitImg));
-	        						DemoFrame_BlockMode.labelPreview2.setHorizontalAlignment(JLabel.CENTER);
-	        					}
-	    				    }
+						int nMaxLength = Math.max(ScanImageList.length, OCRResultLis.length);
+						for (int i = 0; i < nMaxLength; i++) {
+							if (i < ScanImageList.length) {
+								WriteLog(ScanImageList[i] + "\n");   //get each image path
+								if (ScanImageList[i].contains(".pdf") == false && ScanImageList[i].contains(".tif") == false && ScanImageList[i].toUpperCase().contains("_PHOTO") == false && ScanImageList[i].equals("") == false) {
+		        					BufferedImage img = null;
+		        					try {
+		        						File file = new File(ScanImageList[i]);
+		        						if (!file.exists() || !file.isFile()) {
+		        						   continue;
+		        						}
+		        						img = ImageIO.read(new File(ScanImageList[i]));
+		        					} catch (IOException e) {
+		        						e.printStackTrace();
+		        					}
+		        					float ratioW = 0;
+		        					float ratioH = 0;  
+		        					try {
+		        					  ratioW = (float) DemoFrame_BlockMode.labelPreview1.getWidth() / img.getWidth();
+		        					  ratioH = (float) DemoFrame_BlockMode.labelPreview1.getHeight() / img.getHeight();
+		        					} catch (final ArithmeticException e) {
+		        						e.printStackTrace();
+		        					}
+		        					float ratio = (ratioW < ratioH) ? ratioW : ratioH;
+		        					BufferedImage fitImg = convertToBufferedImage(img.getScaledInstance((int) (img.getWidth() * ratio),
+		        							(int) (img.getHeight() * ratio), Image.SCALE_SMOOTH));
+		        					DemoFrame_BlockMode.m_nCount++;
+		        					if (DemoFrame_BlockMode.m_nCount % 2 == 1) {
+		        						DemoFrame_BlockMode.labelPreview1.setIcon(new ImageIcon(fitImg));
+		        						DemoFrame_BlockMode.labelPreview1.setHorizontalAlignment(JLabel.CENTER);
+		        					} else {
+		        						DemoFrame_BlockMode.labelPreview2.setIcon(new ImageIcon(fitImg));
+		        						DemoFrame_BlockMode.labelPreview2.setHorizontalAlignment(JLabel.CENTER);
+		        					}
+		    				    }
+							}					
+							if(i < OCRResultLis.length)
+								WriteLog(OCRResultLis[i] + "\n");    //get each ocr result		  	
 						}
 					}
 					else {
@@ -586,37 +629,44 @@ public class DemoFrame_BlockMode  {
 						String szOCRResultList = new String(m_szOCRResultList.szValue);
 						String ScanImageList[] = szScanImageList.split("\\|&\\|");
 						String OCRResultLis[] = szOCRResultList.split("\\|&\\|");
-						for(int i=0; i< ScanImageList.length; i++) {
-							WriteLog(ScanImageList[i] + "\n");   //get each image path
-							WriteLog(OCRResultLis[i] + "\n");    //get each ocr result
-
-						  	if (ScanImageList[i].contains(".pdf") == false && ScanImageList[i].contains(".tif") == false && ScanImageList[i].toUpperCase().contains("_PHOTO") == false && ScanImageList[i].equals("") == false) {
-	        					BufferedImage img = null;
-	        					try {
-	        						img = ImageIO.read(new File(ScanImageList[i]));
-	        					} catch (IOException e) {
-	        						e.printStackTrace();
-	        					}
-	        					float ratioW = 0;
-	        					float ratioH = 0;  
-	        					try {
-	        					  ratioW = (float) DemoFrame_BlockMode.labelPreview1.getWidth() / img.getWidth();
-	        					  ratioH = (float) DemoFrame_BlockMode.labelPreview1.getHeight() / img.getHeight();
-	        					} catch (final ArithmeticException e) {
-	        						e.printStackTrace();
-	        					}
-	        					float ratio = (ratioW < ratioH) ? ratioW : ratioH;
-	        					BufferedImage fitImg = convertToBufferedImage(img.getScaledInstance((int) (img.getWidth() * ratio),
-	        							(int) (img.getHeight() * ratio), Image.SCALE_SMOOTH));
-	        					DemoFrame_BlockMode.m_nCount++;
-	        					if (DemoFrame_BlockMode.m_nCount % 2 == 1) {
-	        						DemoFrame_BlockMode.labelPreview1.setIcon(new ImageIcon(fitImg));
-	        						DemoFrame_BlockMode.labelPreview1.setHorizontalAlignment(JLabel.CENTER);
-	        					} else {
-	        						DemoFrame_BlockMode.labelPreview2.setIcon(new ImageIcon(fitImg));
-	        						DemoFrame_BlockMode.labelPreview2.setHorizontalAlignment(JLabel.CENTER);
-	        					}
-	    				    }
+						int nMaxLength = Math.max(ScanImageList.length, OCRResultLis.length);
+						for (int i = 0; i < nMaxLength; i++) {
+							if (i < ScanImageList.length) {
+								WriteLog(ScanImageList[i] + "\n");   //get each image path
+								if (ScanImageList[i].contains(".pdf") == false && ScanImageList[i].contains(".tif") == false && ScanImageList[i].toUpperCase().contains("_PHOTO") == false && ScanImageList[i].equals("") == false) {
+		        					BufferedImage img = null;
+		        					try {
+		        						File file = new File(ScanImageList[i]);
+		        						if (!file.exists() || !file.isFile()) {
+		        						   continue;
+		        						}
+		        						img = ImageIO.read(new File(ScanImageList[i]));
+		        					} catch (IOException e) {
+		        						e.printStackTrace();
+		        					}
+		        					float ratioW = 0;
+		        					float ratioH = 0;  
+		        					try {
+		        					  ratioW = (float) DemoFrame_BlockMode.labelPreview1.getWidth() / img.getWidth();
+		        					  ratioH = (float) DemoFrame_BlockMode.labelPreview1.getHeight() / img.getHeight();
+		        					} catch (final ArithmeticException e) {
+		        						e.printStackTrace();
+		        					}
+		        					float ratio = (ratioW < ratioH) ? ratioW : ratioH;
+		        					BufferedImage fitImg = convertToBufferedImage(img.getScaledInstance((int) (img.getWidth() * ratio),
+		        							(int) (img.getHeight() * ratio), Image.SCALE_SMOOTH));
+		        					DemoFrame_BlockMode.m_nCount++;
+		        					if (DemoFrame_BlockMode.m_nCount % 2 == 1) {
+		        						DemoFrame_BlockMode.labelPreview1.setIcon(new ImageIcon(fitImg));
+		        						DemoFrame_BlockMode.labelPreview1.setHorizontalAlignment(JLabel.CENTER);
+		        					} else {
+		        						DemoFrame_BlockMode.labelPreview2.setIcon(new ImageIcon(fitImg));
+		        						DemoFrame_BlockMode.labelPreview2.setHorizontalAlignment(JLabel.CENTER);
+		        					}
+		    				    }
+							}					
+							if(i < OCRResultLis.length)
+								WriteLog(OCRResultLis[i] + "\n");    //get each ocr result		  	
 						}	   
 					}			
 				}				
@@ -797,7 +847,6 @@ public class DemoFrame_BlockMode  {
 					        }
 									
 						int ret = 0;
-												
 						if(comboScanCmd.getSelectedIndex() == -1)
 						{
 							editor = (JTextField) comboScanCmd.getEditor().getEditorComponent();
@@ -827,8 +876,9 @@ public class DemoFrame_BlockMode  {
 					}
 					
 				});
-				btnMergePdf.setFont(new Font("Consolas", Font.PLAIN, 14));
 				
+			
+			
 						JButton btnRecycleSaveFolder = new JButton("RecycleSaveFolder");
 						panel_normal.add(btnRecycleSaveFolder);
 						btnRecycleSaveFolder.setBackground(new Color(204, 204, 204));
@@ -850,11 +900,15 @@ public class DemoFrame_BlockMode  {
 		flowLayout_1.setVgap(8);
 		flowLayout_1.setHgap(15);
 		panel_vtm300.setBackground(Color.WHITE);
-		panel_vtm300.setBorder(new TitledBorder(null, "VTM300", TitledBorder.LEADING, TitledBorder.TOP, null, null));
-		panel_vtm300.setBounds(387, 447, 184, 64);
+		panel_vtm300.setBorder(new TitledBorder(null, "VTM", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panel_vtm300.setBounds(387, 447, 207, 91);
 		frmWfxdemo.getContentPane().add(panel_vtm300);
 		
+		comboEjectDirection = new JComboBox<>(new String[]{"eject backwarding- force", "eject forwarding- force", "eject backwarding stop- force", "eject forwarding stop- force", "eject backwarding", "eject forwarding", "eject backwarding stop", "eject forwarding stop", "eject backwarding by steps", "eject forwarding by steps"});
+		panel_vtm300.add(comboEjectDirection);
+		
 		btnEjectPaper = new JButton("Eject");
+		
 		panel_vtm300.add(btnEjectPaper);
 		btnEjectPaper.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {                
@@ -874,27 +928,43 @@ public class DemoFrame_BlockMode  {
                     return;
                 }
             	
-            	int nEjectDirect = chkEjectDirect.isSelected() ? ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING : ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING;
+            	int nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            	if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding stop- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding stop- force")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding stop")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGSD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding stop")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGSD;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject backwarding by steps")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING_BY_STEPS;
+            	else if(String.valueOf(comboEjectDirection.getSelectedItem()) == "eject forwarding by steps")
+            		nEjectDirect = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING_BY_STEPS;
+            		
                 ret = m_WFXScan.WFXScan_EjectPaperControlWithMsg(nEjectDirect, m_szErrorMsg);
                 
-                if(m_szErrorMsg.szValue.length() > 0)
-                	WriteLog(m_szErrorMsg.szValue + "\n");			
                 
-                else if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret) {
+                if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret) {
                     m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
                     WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
                 }
+                else if(m_szErrorMsg.szValue.length() > 0)
+                	WriteLog(m_szErrorMsg.szValue + "\n");
                 else
                     WriteLog("Status:[LibWFX_EjectPaperControl Success]\n");
             }
         });
 		btnEjectPaper.setBackground(new Color(204, 204, 204));
 		btnEjectPaper.setFont(new Font("Consolas", Font.PLAIN, 14));
-		
-		chkEjectDirect = new JCheckBox("Back");
-		panel_vtm300.add(chkEjectDirect);
-		chkEjectDirect.setBackground(new Color(255, 255, 255));
-		chkEjectDirect.setFont(new Font("Consolas", Font.PLAIN, 14));
 		
 		btnRegister = new JButton();
 		btnRegister.addActionListener(new ActionListener() {
@@ -1009,8 +1079,7 @@ public class DemoFrame_BlockMode  {
 	
 	private void GetCertificatePermission() {
 		try {		
-			int ret = m_WFXScan.WFXScan_GetCertificatePermission(m_szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE.LIBWFX_DATA_TYPE_REGINFO);			
-					
+			int ret = m_WFXScan.WFXScan_GetCertificatePermission(m_szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE.LIBWFX_DATA_TYPE_REGINFO);
 			if (WebFXScan.ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS != ret) {
 				m_WFXScan.WFXScan_GetLastErrorCode(ret, m_szErrorMsg);
 				WriteLog("[ Warning ] " + m_szErrorMsg.szValue + " - ["  + ret + "]\n");
@@ -1019,7 +1088,7 @@ public class DemoFrame_BlockMode  {
 				if(m_szPermissionTypeList.szValue.length() > 0)
 					WriteLog("License: " + m_szPermissionTypeList.szValue + " \n");
 				else
-					WriteLog("License: none\n");				
+					WriteLog("License: none\n");
 			}			
 		}
 		 catch (Exception e) {

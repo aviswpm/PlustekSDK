@@ -1,0 +1,16 @@
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\Bin\x64\Release\LibWFXDemo-VB.exe.config
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\Bin\x64\Release\LibWFXDemo-VB.exe
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\Bin\x64\Release\LibWFXDemo-VB.pdb
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\Bin\x64\Release\LibWFXDemo-VB.xml
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo-VB.vbprojResolveAssemblyReference.cache
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormWaitMsg.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormDemo_NonBlockMode.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormDemo_BlockMode.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormDemo.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormECO.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.FormWarmup.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo_VB.Resources.resources
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo-VB.vbproj.GenerateResource.Cache
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo-VB.exe
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo-VB.xml
+D:\AutoBuild_Git\WebFXScan2_Branch\Source\WebFXScand_Windows2.0\autobuild\LibWebFXScan Demo\LibFXScan\LibWFXDemo-VB\obj\x64\Release\LibWFXDemo-VB.pdb

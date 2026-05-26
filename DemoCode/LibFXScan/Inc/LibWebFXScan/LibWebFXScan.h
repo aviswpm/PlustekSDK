@@ -34,6 +34,7 @@
 #define LIBWFX_API_GETCERTIFICATEPERMISSION		"LibWFX_GetCertificatePermission"
 #define	LIBWFX_API_RECYCLESAVEFOLDER			"LibWFX_RecycleSaveFolder"
 #define LIBWFX_API_WRITEAPLOG					"LibWFX_WriteAPLog"
+#define	LIBWFX_API_GETDEVICECAPABILITY			"LibWFX_GetDeviceCapability"
 
 typedef void* WFXDevHandle; 
 
@@ -86,7 +87,11 @@ typedef enum _ENUM_LIBWFX_ERRCODE
 	LIBWFX_ERRCODE_SERVER_OCCUPIED,             /**< Server has been occupied by other connections */
 	LIBWFX_ERRCODE_SPECIFIC_AP_OPENING,         /**< The unauthorized program is running */
 	LIBWFX_ERRCODE_PARM_VALUE_MISMATCH,         /**< Undefined parameter value appears in command */
-	LIBWFX_ERRCODE_INVALID_FILE_FORMAT			/**< Only image files(JPG, BMP, PNG) are allowed when using "MergePdf" */
+	LIBWFX_ERRCODE_INVALID_FILE_FORMAT,			/**< Only image files(JPG, BMP, PNG) are allowed when using "MergePdf" */
+	LIBWFX_ERRCODE_INIT_DLL_NOT_FOUND,          /**< Failed to load DLL because the file was not found. */
+	LIBWFX_ERRCODE_INIT_DLL_LOAD_FAILED,        /**< DLL file exists but failed to load (may be corrupted or incompatible). */
+	LIBWFX_ERRCODE_API_BUSY,                    /**< API is busy processing the previous request */
+	LIBWFX_ERRCODE_ONLY_SUPPORT_X64		        /**< Only support X64 */
 } ENUM_LIBWFX_ERRCODE;
 
 typedef enum _ENUM_LIBWFX_EVENT_CODE
@@ -131,9 +136,18 @@ typedef enum _ENUM_LIBWFX_NOTIFY_CODE
 
 typedef enum _ENUM_LIBWFX_EJECT_DIRECTION
 {
-    LIBWFX_EJECT_FORWARDING = 1,
-    LIBWFX_EJECT_BACKWARDING,
+	LIBWFX_EJECT_FORWARDING = 1,
+	LIBWFX_EJECT_BACKWARDINGS,
+	LIBWFX_EJECT_BACKWARDING,
+	LIBWFX_EJECT_FORWARDINGS,
+	LIBWFX_EJECT_FORWARDINGD,
+	LIBWFX_EJECT_BACKWARDINGD,
+	LIBWFX_EJECT_BACKWARDINGSD,
+	LIBWFX_EJECT_FORWARDINGSD,
+	LIBWFX_EJECT_FORWARDING_BY_STEPS = 10,
+	LIBWFX_EJECT_BACKWARDING_BY_STEPS,
 } ENUM_LIBWFX_EJECT_DIRECTION;
+
 
 typedef enum _ENUM_LIBWFX_COLOR_MODE
 {
@@ -170,6 +184,17 @@ typedef enum _ENUM_REG_TYPE
 	REG_TYPE_COUNT,
 }ENUM_SPRINT_REG_TYPE;
 
+typedef enum _ENUM_SOURCETYPE
+{
+	UNKNOWN = 0,
+	ADF,
+	SHEETFED,
+	ADF_SHEETFED,
+	FLATBED,
+	ADF_FLATBED,
+	CAMERA,
+} ENUM_SOURCETYPE;
+
 typedef void (*LIBWFXEVENTCB)(ENUM_LIBWFX_EVENT_CODE enEventCode, int nParam, void* pUserDef);
 typedef void (*LIBWFXCB)(ENUM_LIBWFX_NOTIFY_CODE enNotifyCode, void* pUserDef, void* pParam1, void* pParam2);
 
@@ -192,6 +217,7 @@ typedef BOOL (LIBWFX_API* LIBWFX_ISWINDOWEXIST)(wchar_t* szWindowNameIn);
 typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETPRODUCTNAMEDAT)(char* ProductName,  char* id, char* module);
 typedef ENUM_LIBWFX_ERRCODE (LIBWFX_API* LIBWFX_GETLASTERRORCODE)(ENUM_LIBWFX_ERRCODE enErrorCode, wchar_t* szErrorMsg);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_SYNCHRONIZESCAN)(wchar_t* szRequestCmdIn, const wchar_t** szScanImageList, const wchar_t** szOCRResultList, const wchar_t** szExceptionRet, const wchar_t** szEventRet);
-typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_GETCERTIFICATEPERMISSION)(const wchar_t** szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE enDataType);
+typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_GETCERTIFICATEPERMISSION)(wchar_t* szPermissionTypeList, ENUM_PERMISSION_DATA_TYPE enDataType);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_RECYCLESAVEFOLDER)(void);
 typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_WRITEAPLOG)(wchar_t* szMsg);
+typedef ENUM_LIBWFX_ERRCODE(LIBWFX_API* LIBWFX_GETDEVICECAPABILITY)(wchar_t* szDeviceName, ENUM_SOURCETYPE* enSource, bool* bDuplex, bool* bJpegTransfer, int* nDPI, int* nMaxPaperSizeX, int* nMaxPaperSizeY, bool* bLongPaper);

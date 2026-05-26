@@ -39,6 +39,17 @@ Public Class FormDemo_BlockMode
             Me.Close()
             Return
         End If
+        COMBO_EJECT_DIRECTION.Items.Add("eject backwarding- force")
+        COMBO_EJECT_DIRECTION.Items.Add("eject forwarding- force")
+        COMBO_EJECT_DIRECTION.Items.Add("eject backwarding stop- force")
+        COMBO_EJECT_DIRECTION.Items.Add("eject forwarding stop- force")
+        COMBO_EJECT_DIRECTION.Items.Add("eject backwarding")
+        COMBO_EJECT_DIRECTION.Items.Add("eject forwarding")
+        COMBO_EJECT_DIRECTION.Items.Add("eject backwarding stop")
+        COMBO_EJECT_DIRECTION.Items.Add("eject forwarding stop")
+        COMBO_EJECT_DIRECTION.Items.Add("eject backwarding by steps")
+        COMBO_EJECT_DIRECTION.Items.Add("eject forwarding by steps")
+        COMBO_EJECT_DIRECTION.SelectedIndex = 0
         ShowDlg(True, "Init")
         Dim enRet As ENUM_LIBWFX_ERRCODE
         REM Init LibWFXScan Library
@@ -46,6 +57,7 @@ Public Class FormDemo_BlockMode
         REM since we can't debug OCR engine, for debuging UI flow, use LIBWFX_INIT_MODE_NOOCR
         REM OCR will not work, but easier to debug UI while developing      
         If m_DeviceWrapper.m_pfnLibWFX_IsWindowExist("") = True Then
+            ShowDlg(False, "Init")
             MessageBox.Show("Status:[Please confirm whether the ""CheckWindowTitle"" parameter content in LibWebFxScan.ini are all closed!!]", "Warning")
             WriteLog("[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING.ToString() + " - [" + Convert.ToDecimal(ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SPECIFIC_AP_OPENING).ToString() + "]")
             WriteLog("[ Warning ] " + ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT.ToString() + " - [" + Convert.ToDecimal(ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_NO_INIT).ToString() + "]")
@@ -78,8 +90,8 @@ Public Class FormDemo_BlockMode
                 End If
                 WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
             End If
+            ShowDlg(False, "Init")
         End If
-        ShowDlg(False, "Init")
     End Sub
 
     Private Sub MainForm_FormClosed(sender As Object, e As FormClosedEventArgs) Handles MyBase.FormClosed
@@ -154,6 +166,7 @@ Public Class FormDemo_BlockMode
     End Sub
 
     Private Sub PrintImg(ByVal szPath As String)
+        If Not IO.File.Exists(szPath) Then Exit Sub
         If Me.m_nCount Mod 2 = 1 Then
             PIC_IMAGE1.Load(szPath)
         Else
@@ -172,56 +185,32 @@ Public Class FormDemo_BlockMode
         Dim szDefJson As String
         If GetCommandString(szDevName) = True Then
             Return
-        ElseIf szDevName = "A61" Or szDevName = "A62" Or szDevName = "A63" Or szDevName = "A64" Or szDevName = "A65" Or szDevName = "A66" Or szDevName = "J6102" Then
-            szDefJson += "{""device-name"":"""
-            szDefJson += szDevName
-            szDefJson += """,""source"":""Camera"",""recognize-type"":""passport""}"
-        ElseIf szDevName = "7C1U" Or szDevName = "7C8U" Or szDevName = "7C9U" Or szDevName = "7CAU" Or szDevName = "773U" Or szDevName = "7CCU" Then
-            szDefJson += "{""device-name"":"""
-            szDefJson += szDevName
-            szDefJson += """,""source"":""Sheetfed-Duplex"",""recognize-type"":""passport""}"
-        ElseIf szDevName = "776U" Or szDevName = "777U" Or szDevName = "778U" Or szDevName = "FE7010_FE7011" Then
-            szDefJson += "{""device-name"":"""
-            szDefJson += szDevName
-            szDefJson += """,""source"":""Sheetfed-Duplex""}"
-        ElseIf szDevName = "74RU" Or szDevName = "74BU" Or szDevName = "7P1U" Or szDevName = "M11U" Or szDevName = "7B3U" Or szDevName = "M12U" Or szDevName = "FE5020" Then
-            szDefJson += "{""device-name"":"""
-            szDefJson += szDevName
-            szDefJson += """,""source"":""Sheetfed-Front""}"
-        ElseIf szDevName = "256U" Or
-               szDevName = "258U" Or
-               szDevName = "258U_259U" Or
-               szDevName = "25AU" Or
-               szDevName = "271U" Or
-               szDevName = "273U" Or
-               szDevName = "273U_274U" Or
-               szDevName = "275U" Or
-               szDevName = "276U" Or
-               szDevName = "261U" Or
-               szDevName = "BAG" Or
-               szDevName = "7K1U" Or
-               szDevName = "6C6U" Or
-               szDevName = "BB1U" Or
-               szDevName = "BAGU" Or
-               szDevName = "2B2U" Or
-               szDevName = "2B3U" Or
-               szDevName = "2D1U" Or
-               szDevName = "2C1U" Or
-               szDevName = "797U" Or
-               szDevName = "7K7U" Or
-               szDevName = "2G1U" Or
-               szDevName = "2G2U" Or
-               szDevName = "678U" Or
-               szDevName = "7K8U" Or
-               szDevName = "B85U" Or
-               szDevName = "2D3U" Then
-            szDefJson += "{""device-name"":"""
-            szDefJson += szDevName
-            szDefJson += """,""source"":""Flatbed""}"
         Else
             szDefJson += "{""device-name"":"""
             szDefJson += szDevName
-            szDefJson += """,""source"":""ADF-Duplex""}"
+            Dim nSource As Integer = 0
+            Dim enRet As ENUM_LIBWFX_ERRCODE = m_DeviceWrapper.m_pfnLibWFX_GetDeviceCapability(szDevName, nSource, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero, IntPtr.Zero)
+            If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
+                Dim pszErrorMsg2 As IntPtr = Marshal.AllocHGlobal(260)
+                Dim szErrorMsg2 As String
+                m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(enRet, pszErrorMsg2)
+                szErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg2)
+                WriteLog("[ Warning ] " + szErrorMsg2 + " - [" + Convert.ToDecimal(enRet).ToString() + "]") REM get fail message
+                Return
+            Else
+                Dim enSource As ENUM_SOURCETYPE = CType(nSource, ENUM_SOURCETYPE)
+                If enSource = ENUM_SOURCETYPE.CAMERA Then
+                    szDefJson += """,""source"":""Camera"",""recognize-type"":""passport""}"
+                ElseIf enSource = ENUM_SOURCETYPE.SHEETFED Then
+                    szDefJson += """,""source"":""Sheetfed-Front""}"
+                ElseIf enSource = ENUM_SOURCETYPE.FLATBED Then
+                    szDefJson += """,""source"":""Flatbed""}"
+                ElseIf enSource = ENUM_SOURCETYPE.ADF Or enSource = ENUM_SOURCETYPE.ADF_FLATBED Or enSource = ENUM_SOURCETYPE.ADF_SHEETFED Then
+                    szDefJson += """,""source"":""ADF-Duplex""}"
+                Else
+                    Return
+                End If
+            End If
         End If
         COMBO_COMMAND.Items.Add(szDefJson)
         COMBO_COMMAND.SelectedIndex = 0
@@ -291,7 +280,7 @@ Public Class FormDemo_BlockMode
         Dim szDevName As String = CMB_DEVICE_LIST.SelectedItem.ToString()
         Dim szCommand As String
 
-        If szDevName = "A61" Or szDevName = "A62" Or szDevName = "A63" Or szDevName = "A64" Or szDevName = "A65" Or szDevName = "A66" Or szDevName = "J6102" Then
+        If szDevName = "A61" Or szDevName = "A62" Or szDevName = "A63" Or szDevName = "A64" Or szDevName = "A65" Or szDevName = "A66" Or szDevName = "J6102" Or szDevName = "J1204" Then
             szCommand += "{""device-name"":"""
             szCommand += szDevName
             szCommand += """,""source"":""Camera"",""ext-capturetype"":""g""}"
@@ -342,22 +331,42 @@ Public Class FormDemo_BlockMode
             Return
         End If
 
-        If CHK_EJECT_DIRECT.Checked = True Then
+        If COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject backwarding- force" Then
             enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING
-        Else
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject forwarding- force" Then
             enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject backwarding stop- force" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGS
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject forwarding stop- force" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGS
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject backwarding" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGD
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject forwarding" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGD
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject backwarding stop" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDINGSD
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject forwarding stop" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDINGSD
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject backwarding by steps" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_BACKWARDING_BY_STEPS
+        ElseIf COMBO_EJECT_DIRECTION.SelectedItem.ToString = "eject forwarding by steps" Then
+            enDirection = ENUM_LIBWFX_EJECT_DIRECTION.LIBWFX_EJECT_FORWARDING_BY_STEPS
         End If
 
         Dim pszErrorMsg As IntPtr
         enRet = m_DeviceWrapper.m_pfnLibWFX_EjectPaperControlWithMsg(enDirection, pszErrorMsg)
 
-        Dim pszErrorMsg2 As String
-        pszErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg)
+        Dim szErrorMsg As String
+        szErrorMsg = Marshal.PtrToStringUni(pszErrorMsg)
 
-        If pszErrorMsg2.Length > 0 Then
-            WriteLog(pszErrorMsg2)
-        ElseIf enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
-            WriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]")
+        If enRet <> ENUM_LIBWFX_ERRCODE.LIBWFX_ERRCODE_SUCCESS Then
+            Dim pszErrorMsg2 As IntPtr = Marshal.AllocHGlobal(260)
+            Dim szErrorMsg2 As String
+            m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(enRet, pszErrorMsg2)
+            szErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg2)
+            WriteLog("[ Warning ] " + szErrorMsg2 + " - [" + Convert.ToDecimal(enRet).ToString() + "]") REM get fail message
+        ElseIf szErrorMsg.Length > 0 Then
+            WriteLog(pszErrorMsg)
         Else
             WriteLog("Status:[LibWFX_EjectPaperControl Success]")
         End If
@@ -496,7 +505,7 @@ Public Class FormDemo_BlockMode
 
     Private Sub GetCertificatePermission()
         Dim enRet As ENUM_LIBWFX_ERRCODE
-        Dim pstr As IntPtr
+        Dim pstr As IntPtr = Marshal.AllocHGlobal(260)
         Dim szPermission As String
 
         enRet = m_DeviceWrapper.m_pfnLibWFX_GetCertificatePermission(pstr, ENUM_PERMISSION_DATA_TYPE.LIBWFX_DATA_TYPE_REGINFO)
@@ -526,7 +535,11 @@ Public Class FormDemo_BlockMode
         m_DeviceWrapper.m_pfnLibWFX_EditCommand(szCommand, pCommandOut)
         szRtn = Marshal.PtrToStringUni(pCommandOut)
 
-        If (szRtn <> String.Empty) And (szRtn.Length > 0) Then
+         If (szRtn <> String.Empty) And (szRtn.Length > 0) Then
+            If szRtn.Contains("Invalid JSON format") Then
+                MessageBox.Show("Invalid JSON format", "Warning")
+                Return
+            End If
             Dim commandLists As New ArrayList
             commandLists.Add(szRtn)
             For idx As Integer = 0 To COMBO_COMMAND.Items.Count - 1
@@ -576,7 +589,7 @@ Public Class FormDemo_BlockMode
             Dim pszErrorMsg2 As String
             m_DeviceWrapper.m_pfnLibWFX_GetLastErrorCode(enRet, pszErrorMsg)
             pszErrorMsg2 = Marshal.PtrToStringUni(pszErrorMsg)
-            DispatcherWriteLog("[ Warning ] " + enRet.ToString() + " - [" + Convert.ToDecimal(enRet).ToString() + "]") REM get fail message
+            DispatcherWriteLog("[ Warning ] " + pszErrorMsg2 + " - [" + Convert.ToDecimal(enRet).ToString() + "]") REM get fail message
         ElseIf szEventRet.Length > 1 Then
             SetCommandString(CMB_DEVICE_LIST.SelectedItem.ToString(), COMBO_COMMAND.Text)
             DispatcherWriteLog("Status:[Device Ready!]")
@@ -602,21 +615,19 @@ Public Class FormDemo_BlockMode
                     Next
                 End If
             Else
-                If ScanImageArray.Count > 0 Then
-                    For idx As Integer = 0 To ScanImageArray.Count - 1
-                        DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
-
-                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
-                            REM m_nCount += 1
-                            REM If m_nCount Mod 2 = 1 Then
-                            REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
-                            REM Else
-                            REM PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
-                            REM   End If
-                            DispatcherPrintImg(ScanImageArray(idx).Trim())
+                Dim nMaxLength As Integer = Math.Max(ScanImageArray.Length, OCRResultArray.Length)
+                If nMaxLength > 0 Then
+                    For idx As Integer = 0 To nMaxLength - 1
+                        If idx < ScanImageArray.Length - 1 Then
+                            DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each image path
+                            If ((ScanImageArray(idx).Contains(".jpg") = True Or ScanImageArray(idx).Contains(".png") = True Or ScanImageArray(idx).Contains(".bmp") = True) And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                                DispatcherPrintImg(ScanImageArray(idx).Trim())
+                            End If
                         End If
-                        If String.IsNullOrEmpty(OCRResultArray(idx).Trim()) = False Then
-                            DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
+                        If idx < OCRResultArray.Length - 1 Then
+                            If OCRResultArray(idx) <> String.Empty Then
+                                DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result
+                            End If
                         End If
                     Next
                 End If
@@ -645,22 +656,19 @@ Public Class FormDemo_BlockMode
                     Next
                 End If
             Else
-                If ScanImageArray.Count > 0 Then
-                    For idx As Integer = 0 To ScanImageArray.Count - 1
-                        DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each ocr result
-
-                        If (ScanImageArray(idx).Contains(".pdf") <> True And ScanImageArray(idx).Contains(".tif") <> True And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
-                            REM m_nCount += 1
-                            REM If m_nCount Mod 2 = 1 Then
-                            REM PIC_IMAGE1.Load(ScanImageArray(idx).Trim())
-                            REM Else
-                            REM PIC_IMAGE2.Load(ScanImageArray(idx).Trim())
-                            REM   End If
-                            DispatcherPrintImg(ScanImageArray(idx).Trim())
+                Dim nMaxLength As Integer = Math.Max(ScanImageArray.Length, OCRResultArray.Length)
+                If nMaxLength > 0 Then
+                    For idx As Integer = 0 To nMaxLength - 1
+                        If idx < ScanImageArray.Length - 1 Then
+                            DispatcherWriteLog(ScanImageArray(idx).Trim())  REM get each image path
+                            If ((ScanImageArray(idx).Contains(".jpg") = True Or ScanImageArray(idx).Contains(".png") = True Or ScanImageArray(idx).Contains(".bmp") = True) And ScanImageArray(idx).ToUpper.Contains("_PHOTO") <> True And String.IsNullOrEmpty(ScanImageArray(idx).Trim()) = False) Then
+                                DispatcherPrintImg(ScanImageArray(idx).Trim())
+                            End If
                         End If
-
-                        If String.IsNullOrEmpty(OCRResultArray(idx).Trim()) = False Then
-                            DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result               
+                        If idx < OCRResultArray.Length - 1 Then
+                            If OCRResultArray(idx) <> String.Empty Then
+                                DispatcherWriteLog(OCRResultArray(idx).Trim())  REM get each ocr result
+                            End If
                         End If
                     Next
                 End If
