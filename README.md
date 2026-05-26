@@ -113,9 +113,9 @@ Plustek SDK 提供兩種版本：
     [Plustek 官方網站]:https://plustek.com/tw/solutions/sdk.php
     [Plustek]:https://plustek.com/us/solutions/sdk.php
     
-    [完整報告]:https://sonarcloud.io/explore/projects?search=WebFXScan
-    [Full Report]:https://sonarcloud.io/explore/projects?search=WebFXScan
-    [Informe Completo]:https://sonarcloud.io/explore/projects?search=WebFXScan
+    [完整報告]:https://sonarcloud.io/project/overview?id=plustekpm_webfxscan
+    [Full Report]:https://sonarcloud.io/project/overview?id=plustekpm_webfxscan
+    [Informe Completo]:https://sonarcloud.io/project/overview?id=plustekpm_webfxscan
 
         
         

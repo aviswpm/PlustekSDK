@@ -1,27 +1,22 @@
 # Release Note
 # **[GitHub - Version 2.0.8]**
 
->## PlustekSDK_LDSetup_26172_x64 | PlustekSDK_LDSetup_26172_x86
-### AviScanProcess - *2.0.8.26172*
-### WebFXScan2  - *2.1.174.26172*
+>## PlustekSDK_LDSetup_26215_x64 | PlustekSDK_LDSetup_26215_x86
+### AviScanProcess - *2.0.8.26215*
+### WebFXScan2  - *2.1.188.26205*
 - **Added**
-  - Support multiple recognize
-  - VTM300 speed ​​related parameters
-- **Update**
-  - Camera.ini for Crop to start in (0,0)
-  - Optimize shading
-  - Calibration alert message
-  - Initial stage alert message
-  - Optimize recognize result
+  - X-Cube 1000, X-Mini 2000 and OpticBook 4800 support
+  - Special SN rule for USDL permission
+  - EEPROM shading rule using a random code
+  - VTM 300 eject steps and direction updates
+  - frontrotate and rearrotate commands
+  - Error codes 999 and 1017–1021
+  - WebSDK LIBWFX_NOTIFY_EXCEPTION
 
 - **Fixed**
-  - The First set slow issue
-  - Autoscan issue
-  
->## DemoCode
-### LibFXScan
-- **Added**
-  - Java demo 
+  - WebSDK HTTPS Protocol issue
+  - WebSDK multiple client connection issues
+
 
 # **[GitHub - Version 2.0.7]**
 
@@ -41,11 +36,6 @@
 - **Fixed**
   - The First set slow issue
   - Autoscan issue
-  
->## DemoCode
-### LibFXScan
-- **Added**
-  - Java demo 
 
 # **[GitHub - Version 2.0.6]**
 
