@@ -1,9 +1,9 @@
 # Release Note
 # **[GitHub - Version 2.0.8]**
 
->## PlustekSDK_LDSetup_26215_x64 | PlustekSDK_LDSetup_26215_x86
-### AviScanProcess - *2.0.8.26215*
-### WebFXScan2  - *2.1.188.26205*
+>## PlustekSDK_LDSetup_26344_x64 | PlustekSDK_LDSetup_26344_x86
+### AviScanProcess - *2.0.8.26344*
+### WebFXScan2  - *2.1.190.26344*
 - **Added**
   - X-Cube 1000, X-Mini 2000 and OpticBook 4800 support
   - Special SN rule for USDL permission
@@ -16,6 +16,7 @@
 - **Fixed**
   - WebSDK HTTPS Protocol issue
   - WebSDK multiple client connection issues
+  - LDSetup installation issues
 
 
 # **[GitHub - Version 2.0.7]**
